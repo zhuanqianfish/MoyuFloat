@@ -274,8 +274,9 @@
   let sourceCanvas=document.createElement('canvas'),depthCanvas=document.createElement('canvas'),sourceW=1200,sourceH=900;
   let mode=0,invert=false,auto=true,paintMode=0,toolMode='view',dragging=false,lastPointer=null,hasUserImage=false;
   let split=.5,cel=false,orbit=false,lastOrbit=0,targetView={x:0,y:0},view={x:0,y:0},frames=0,lastFps=performance.now();
-  let aiSession=null,aiBusy=false;
+  let aiSession=null,aiProvider='',aiBusy=false,aiRetryFresh=false;
   const AI_MODEL_URL='https://huggingface.co/onnx-community/depth-anything-v2-small/resolve/main/onnx/model.onnx';
+  const AI_CACHE_NAME='depth-anything-v2-small-v2';
   const ORT_WASM_PATH='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
   let lights=[
     {name:'暖色主灯',x:.28,y:.28,z:.62,color:'#ff955d',power:1.1,radius:.48,on:1},
@@ -317,37 +318,98 @@
   function setAIProgress(value,text){
     const n=Math.max(0,Math.min(100,Math.round(value)));$('#aiProgress').hidden=false;$('#aiProgressFill').style.width=n+'%';$('#aiProgressPct').textContent=n+'%';$('#aiProgressText').textContent=text;$('#aiProgressBar').setAttribute('aria-valuenow',String(n));
   }
-  async function fetchModelBytes(){
-    let response=null,fromCache=false,cache=null;
-    if('caches' in window){try{cache=await caches.open('depth-anything-v2-small-v1');response=await cache.match(AI_MODEL_URL);fromCache=!!response}catch(e){cache=null}}
-    if(!response){response=await fetch(AI_MODEL_URL,{mode:'cors',cache:'force-cache'});if(!response.ok)throw new Error('model-download-'+response.status)}
+  async function fetchModelBytes(forceNetwork){
+    let response=null,fromCache=false,cache=null,cacheWrite=null;
+    if('caches' in window){
+      try{
+        cache=await caches.open(AI_CACHE_NAME);
+        if(forceNetwork)await cache.delete(AI_MODEL_URL);
+        else{response=await cache.match(AI_MODEL_URL);fromCache=!!response}
+      }catch(e){cache=null}
+    }
+    if(!response){
+      try{response=await fetch(AI_MODEL_URL,{mode:'cors',cache:forceNetwork?'reload':'force-cache'})}
+      catch(e){throw new Error('model-network')}
+      if(!response.ok)throw new Error('model-download-'+response.status);
+      if(cache){try{cacheWrite=cache.put(AI_MODEL_URL,response.clone()).catch(()=>{})}catch(e){}}
+    }
     const total=+(response.headers.get('content-length')||0),reader=response.body&&response.body.getReader();
-    if(!reader){const buffer=await response.arrayBuffer();setAIProgress(78,fromCache?'已读取本地模型':'模型下载完成');return buffer}
+    if(!reader){
+      const buffer=await response.arrayBuffer();
+      if(buffer.byteLength<20000000)throw new Error('model-incomplete');
+      setAIProgress(76,fromCache?'本地模型已就绪':'模型下载完成');
+      return{bytes:buffer,fromCache};
+    }
     const chunks=[];let loaded=0;
-    while(true){const part=await reader.read();if(part.done)break;chunks.push(part.value);loaded+=part.value.byteLength;const ratio=total?loaded/total:Math.min(.94,loaded/95000000);setAIProgress(5+ratio*73,(fromCache?'读取本地模型 ':'下载 AI 模型 ')+(loaded/1048576).toFixed(1)+' MB')}
-    const merged=new Uint8Array(loaded);let offset=0;chunks.forEach(chunk=>{merged.set(chunk,offset);offset+=chunk.byteLength});
-    if(cache&&!fromCache){try{await cache.put(AI_MODEL_URL,new Response(merged,{headers:{'Content-Type':'application/octet-stream','Content-Length':String(loaded)}}))}catch(e){}}
-    setAIProgress(78,fromCache?'本地模型已就绪':'模型下载完成');return merged.buffer;
+    while(true){
+      const part=await reader.read();if(part.done)break;
+      chunks.push(part.value);loaded+=part.value.byteLength;
+      const ratio=total?loaded/total:Math.min(.94,loaded/105000000);
+      setAIProgress(5+ratio*71,(fromCache?'读取本地模型 ':'下载 AI 模型 ')+(loaded/1048576).toFixed(1)+' MB');
+    }
+    if(loaded<20000000)throw new Error('model-incomplete');
+    const merged=new Uint8Array(loaded);let offset=0;
+    chunks.forEach(chunk=>{merged.set(chunk,offset);offset+=chunk.byteLength});
+    if(cacheWrite)cacheWrite.catch(()=>{});
+    setAIProgress(76,fromCache?'本地模型已就绪':'模型下载完成');
+    return{bytes:merged.buffer,fromCache};
+  }
+  async function createAISession(model){
+    let hasWebGPU=false;
+    if(navigator.gpu&&navigator.gpu.requestAdapter){try{hasWebGPU=!!(await navigator.gpu.requestAdapter())}catch(e){}}
+    const providers=hasWebGPU?['webgpu','wasm']:['wasm'];
+    setAIProgress(80,hasWebGPU?'初始化 WebGPU / WASM':'初始化 WASM 推理引擎');
+    try{
+      const session=await ort.InferenceSession.create(model,{executionProviders:providers,graphOptimizationLevel:'all'});
+      aiProvider=hasWebGPU?'WebGPU':'WASM';
+      return session;
+    }catch(firstError){
+      if(!hasWebGPU)throw firstError;
+      setAIProgress(82,'WebGPU 初始化失败，改用 WASM');
+      const session=await ort.InferenceSession.create(model,{executionProviders:['wasm'],graphOptimizationLevel:'all'});
+      aiProvider='WASM';
+      return session;
+    }
   }
   async function ensureAISession(){
     if(aiSession)return aiSession;
     if(!window.ort)throw new Error('runtime-unavailable');
-    ort.env.wasm.wasmPaths=ORT_WASM_PATH;ort.env.wasm.numThreads=1;
-    const model=await fetchModelBytes();setAIProgress(82,'初始化推理引擎');
-    if(navigator.gpu){try{aiSession=await ort.InferenceSession.create(model,{executionProviders:['webgpu'],graphOptimizationLevel:'all'});aiSession.providerLabel='WebGPU';return aiSession}catch(e){setAIProgress(84,'WebGPU 不可用，切换 WASM')}}
-    aiSession=await ort.InferenceSession.create(model,{executionProviders:['wasm'],graphOptimizationLevel:'all'});aiSession.providerLabel='WASM';return aiSession;
+    ort.env.wasm.wasmPaths=ORT_WASM_PATH;ort.env.wasm.numThreads=1;ort.env.wasm.simd=true;
+    let model=await fetchModelBytes(aiRetryFresh);aiRetryFresh=false;
+    try{aiSession=await createAISession(model.bytes)}
+    catch(err){
+      if(!model.fromCache)throw err;
+      setAIProgress(8,'缓存模型不可用，正在重新下载');
+      model=await fetchModelBytes(true);
+      aiSession=await createAISession(model.bytes);
+    }
+    return aiSession;
+  }
+  function modelInputSize(session){
+    const all=session.inputMetadata,meta=Array.isArray(all)?all[0]:(all&&all[session.inputNames[0]]),dims=meta&&(meta.dimensions||meta.dims);
+    const fixed=dims&&Number(dims[dims.length-1]);
+    if(Number.isFinite(fixed)&&fixed>0)return fixed;
+    return navigator.deviceMemory&&navigator.deviceMemory<=4?252:392;
+  }
+  function aiFailureMessage(err){
+    const msg=String(err&&err.message||err||'').toLowerCase();
+    if(msg.includes('runtime-unavailable'))return'AI 组件未加载，请检查网络后重试';
+    if(msg.includes('model-network')||msg.includes('model-download'))return'AI 模型下载失败，请检查网络后重试';
+    if(msg.includes('model-incomplete'))return'AI 模型下载不完整，再点一次即可重新下载';
+    if(msg.includes('memory')||msg.includes('allocation'))return'设备内存不足，请关闭其他页面后重试';
+    return'AI 推理失败，再点一次将重新载入模型';
   }
   async function generateAIDepth(){
     if(aiBusy||!hasUserImage)return;
     aiBusy=true;const btn=$('#aiDepthBtn');btn.disabled=true;btn.textContent='正在生成…';setAIProgress(1,'检查运行环境');
     try{
-      const session=await ensureAISession(),size=518,prep=document.createElement('canvas');prep.width=size;prep.height=size;const pc=prep.getContext('2d',{willReadFrequently:true});pc.drawImage(sourceCanvas,0,0,size,size);const pixels=pc.getImageData(0,0,size,size).data,data=new Float32Array(3*size*size),mean=[.485,.456,.406],std=[.229,.224,.225];
-      setAIProgress(88,'准备图像');for(let i=0;i<size*size;i++){data[i]=(pixels[i*4]/255-mean[0])/std[0];data[size*size+i]=(pixels[i*4+1]/255-mean[1])/std[1];data[size*size*2+i]=(pixels[i*4+2]/255-mean[2])/std[2]}
+      const session=await ensureAISession(),size=modelInputSize(session),prep=document.createElement('canvas');prep.width=size;prep.height=size;const pc=prep.getContext('2d',{willReadFrequently:true});pc.drawImage(sourceCanvas,0,0,size,size);const pixels=pc.getImageData(0,0,size,size).data,data=new Float32Array(3*size*size),mean=[.485,.456,.406],std=[.229,.224,.225];
+      setAIProgress(87,'准备 '+size+' × '+size+' 图像');for(let i=0;i<size*size;i++){data[i]=(pixels[i*4]/255-mean[0])/std[0];data[size*size+i]=(pixels[i*4+1]/255-mean[1])/std[1];data[size*size*2+i]=(pixels[i*4+2]/255-mean[2])/std[2]}
       setAIProgress(91,'AI 正在估算空间层次');const inputName=session.inputNames[0],feeds={};feeds[inputName]=new ort.Tensor('float32',data,[1,3,size,size]);const outputs=await session.run(feeds),result=outputs[session.outputNames[0]],values=result.data,dims=result.dims,outW=dims[dims.length-1],outH=dims[dims.length-2];
       let min=Infinity,max=-Infinity;for(let i=0;i<values.length;i++){const v=values[i];if(Number.isFinite(v)){if(v<min)min=v;if(v>max)max=v}}if(!Number.isFinite(min)||max<=min)throw new Error('invalid-depth');
       const map=document.createElement('canvas');map.width=outW;map.height=outH;const mc=map.getContext('2d'),image=mc.createImageData(outW,outH),range=max-min;for(let i=0;i<outW*outH;i++){const v=Math.max(0,Math.min(255,Math.round((values[i]-min)/range*255)));image.data[i*4]=image.data[i*4+1]=image.data[i*4+2]=v;image.data[i*4+3]=255}mc.putImageData(image,0,0);
-      depthCanvas.width=sourceW;depthCanvas.height=sourceH;const dc=depthCanvas.getContext('2d');dc.imageSmoothingEnabled=true;dc.imageSmoothingQuality='high';dc.drawImage(map,0,0,sourceW,sourceH);uploadTexture(depthTex,depthCanvas,1);setAIProgress(100,'AI 深度已生成 · '+session.providerLabel);$('#stageStatus').textContent='AI 深度 · '+session.providerLabel;notify('AI 深度已生成，可继续用画笔修正');setTimeout(()=>{$('#aiProgress').hidden=true},1600);
-    }catch(err){console.error('AI depth generation failed',err);setAIProgress(0,'生成失败，已保留亮度深度');const message=err&&err.message==='runtime-unavailable'?'AI 组件加载失败，请检查网络后重试':'AI 深度生成失败，请检查网络或改用亮度深度';notify(message)}finally{aiBusy=false;btn.disabled=!hasUserImage;btn.textContent='AI 生成深度'}
+      depthCanvas.width=sourceW;depthCanvas.height=sourceH;const dc=depthCanvas.getContext('2d');dc.imageSmoothingEnabled=true;dc.imageSmoothingQuality='high';dc.drawImage(map,0,0,sourceW,sourceH);uploadTexture(depthTex,depthCanvas,1);setAIProgress(100,'AI 深度已生成 · '+aiProvider);$('#stageStatus').textContent='AI 深度 · '+aiProvider;notify('AI 深度已生成，可继续用画笔修正');setTimeout(()=>{$('#aiProgress').hidden=true},1600);
+    }catch(err){console.error('AI depth generation failed',err);aiSession=null;aiProvider='';aiRetryFresh=true;setAIProgress(0,'未改变当前深度 · 可直接重试');btn.textContent='重试 AI 深度';notify(aiFailureMessage(err))}finally{aiBusy=false;btn.disabled=!hasUserImage;if(btn.textContent==='正在生成…')btn.textContent='AI 生成深度'}
   }
   function uploadTexture(tex,src,unit){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,tex);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,src)}
   function setSource(img,name){
