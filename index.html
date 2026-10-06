@@ -67,18 +67,21 @@
     .iconbtn{width:30px;height:30px;border:1px solid #33362f;border-radius:6px;background:#21231f;color:#c9ccc4;display:grid;place-items:center;cursor:pointer}
     .iconbtn:hover,.iconbtn.active{background:#373b33;color:#fff}.iconbtn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8}
     .canvas-wrap{position:relative;width:100%;height:auto;aspect-ratio:var(--art-aspect,4 / 3);min-height:0;display:grid;place-items:center;overflow:hidden;touch-action:none;background-color:#0b0c0a;background-image:linear-gradient(45deg,#11130f 25%,transparent 25%),linear-gradient(-45deg,#11130f 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#11130f 75%),linear-gradient(-45deg,transparent 75%,#11130f 75%);background-size:22px 22px;background-position:0 0,0 11px,11px -11px,-11px 0px}
-    #glcanvas{display:block;width:100%;height:100%;cursor:grab}#glcanvas.dragging{cursor:grabbing}#glcanvas.painting{cursor:crosshair}
+    #glcanvas{display:block;width:100%;height:100%;cursor:grab}#glcanvas.dragging{cursor:grabbing}#glcanvas.painting{cursor:crosshair}#glcanvas.light-moving{cursor:move}
     .canvas-hud{position:absolute;left:12px;bottom:12px;display:flex;gap:7px;pointer-events:none}
     .hud-chip{background:rgba(10,11,9,.74);border:1px solid rgba(255,255,255,.14);color:#dfe2db;border-radius:5px;padding:5px 8px;font:10px "Source Code Pro",monospace;backdrop-filter:blur(5px)}
-    .light-marker{position:absolute;width:25px;height:25px;border:1px solid rgba(255,255,255,.8);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;display:none}.light-marker:before,.light-marker:after{content:"";position:absolute;background:rgba(255,255,255,.8)}.light-marker:before{width:1px;height:37px;left:11px;top:-7px}.light-marker:after{height:1px;width:37px;top:11px;left:-7px}.light-marker.selected{display:block;box-shadow:0 0 18px 3px var(--marker,#fff)}
+    .light-gizmos{position:absolute;inset:0;pointer-events:none}.light-marker{position:absolute;width:27px;height:27px;border:1px solid rgba(255,255,255,.62);border-radius:50%;transform:translate(-50%,-50%);display:grid;place-items:center;color:#fff;background:rgba(8,9,7,.46);font:700 10px "Source Code Pro",monospace;opacity:.52;box-shadow:0 0 0 1px rgba(0,0,0,.34)}.light-marker.selected{opacity:1;border-color:#fff;background:color-mix(in srgb,var(--marker,#fff) 28%,rgba(8,9,7,.7));box-shadow:0 0 21px 4px var(--marker,#fff)}
+    .compare-handle{position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,255,.94);transform:translateX(-1px);display:none;cursor:ew-resize;z-index:4;box-shadow:0 0 0 1px rgba(0,0,0,.25)}.compare-handle.show{display:block}.compare-handle:after{content:"↔";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:27px;height:27px;border-radius:50%;display:grid;place-items:center;background:#f4f3ec;color:#151613;font:700 12px sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.36)}
     .tip{position:absolute;right:12px;bottom:12px;color:#b9bdb4;font-size:10px;background:rgba(10,11,9,.72);padding:6px 8px;border-radius:5px;pointer-events:none}
     .lights{display:flex;flex-direction:column;gap:7px}
-    .light-item{display:grid;grid-template-columns:25px 1fr auto;align-items:center;gap:8px;padding:8px;border:1px solid var(--line);border-radius:7px;cursor:pointer;background:transparent}
+    .light-item{display:grid;grid-template-columns:25px 1fr auto auto;align-items:center;gap:6px;padding:8px;border:1px solid var(--line);border-radius:7px;cursor:pointer;background:transparent}
     .light-item.active{border-color:var(--ink);background:var(--bg)}
     .light-swatch{width:20px;height:20px;border-radius:50%;background:var(--swatch);box-shadow:inset 0 0 0 1px rgba(0,0,0,.2)}
     .light-name{font-size:11px;font-weight:600}.light-pos{font:9px "Source Code Pro",monospace;color:var(--muted);margin-top:1px}
-    .light-toggle{border:0;background:transparent;color:var(--muted);cursor:pointer;padding:4px}
-    .add-light{width:100%;margin-top:8px;border:1px dashed var(--line);background:transparent;border-radius:7px;padding:8px;color:var(--muted);font-size:11px;cursor:pointer}.add-light:hover{color:var(--ink);border-color:var(--ink)}
+    .light-toggle,.light-delete{border:0;background:transparent;color:var(--muted);cursor:pointer;padding:4px;line-height:1}.light-delete{font-size:17px}.light-toggle:hover,.light-delete:hover{color:var(--ink)}
+    .add-light{width:100%;margin-top:8px;border:1px dashed var(--line);background:transparent;border-radius:7px;padding:8px;color:var(--muted);font-size:11px;cursor:pointer}.add-light:hover{color:var(--ink);border-color:var(--ink)}.add-light:disabled{opacity:.42;cursor:not-allowed}
+    .presets{display:flex;gap:5px;flex-wrap:wrap}.preset{border:1px solid var(--line);background:transparent;border-radius:6px;padding:6px 8px;font-size:10px;cursor:pointer}.preset:hover{background:var(--panel-2);border-color:var(--ink)}
+    .stage-modes{display:flex;border:1px solid #33362f;border-radius:7px;overflow:hidden}.stage-modes .iconbtn{border:0;border-right:1px solid #33362f;border-radius:0}.stage-modes .iconbtn:last-child{border-right:0}.stage-modes .iconbtn[aria-pressed="true"]{background:#eceee7;color:#11130f}
     .ai-depth{padding:12px 15px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--mint) 13%,var(--panel))}
     .ai-depth-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:9px}.ai-depth-head strong{font-size:12px}.ai-depth-head span{font-size:9px;line-height:1.4;color:var(--muted);text-align:right}
     .ai-button{width:100%;border:1px solid var(--ink);background:var(--ink);color:var(--panel);border-radius:7px;padding:9px 10px;font-weight:700;font-size:12px;cursor:pointer}.ai-button:hover:not(:disabled){background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}.ai-button:disabled{cursor:not-allowed;opacity:.48}
@@ -92,7 +95,7 @@
     .notice{position:fixed;left:50%;bottom:18px;transform:translate(-50%,20px);background:var(--ink);color:var(--panel);padding:10px 14px;border-radius:7px;font-size:12px;opacity:0;pointer-events:none;transition:.22s;z-index:30}.notice.show{opacity:1;transform:translate(-50%,0)}
     .unsupported{position:absolute;inset:46px 0 0;background:#11130f;color:#fff;display:none;place-items:center;text-align:center;padding:30px;z-index:6}.unsupported.show{display:grid}.unsupported h2{margin:0 0 8px;font-size:20px}.unsupported p{margin:0;color:#aeb2aa;max-width:420px;font-size:13px;line-height:1.6}
     @media(max-width:1060px){.workspace{grid-template-columns:230px minmax(420px,1fr)}.right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.right .panel-title{grid-column:1/-1}.right .section{border-bottom:0}.right .section:first-of-type{border-right:1px solid var(--line)}}
-    @media(max-width:720px){.shell{padding:13px 10px 24px}.topline{align-items:flex-start;flex-direction:column}.actions{width:100%;justify-content:flex-start}.workspace{display:flex;flex-direction:column}.panel,.stage-panel{width:100%}.left{order:2}.stage-panel{order:1;min-height:0}.right{order:3;display:block}.right .section:first-of-type{border-right:0;border-bottom:1px solid var(--line)}.canvas-wrap{height:auto;min-height:0;aspect-ratio:var(--art-aspect,4 / 3)}.tip{display:none}.stagebar{height:42px}.intro p{font-size:12px}.btn{flex:1;justify-content:center}.mode-row{gap:4px}}
+    @media(max-width:720px){.shell{padding:13px 10px 24px}.topline{align-items:flex-start;flex-direction:column}.actions{width:100%;justify-content:flex-start}.workspace{display:flex;flex-direction:column}.panel,.stage-panel{width:100%}.left{order:2}.stage-panel{order:1;min-height:0}.right{order:3;display:block}.right .section:first-of-type{border-right:0;border-bottom:1px solid var(--line)}.canvas-wrap{height:auto;min-height:0;aspect-ratio:var(--art-aspect,4 / 3)}.tip{display:none}.stagebar{height:42px}.intro p{font-size:12px}.btn{flex:1;justify-content:center}.mode-row{gap:4px}.presets{display:grid;grid-template-columns:repeat(3,1fr)}.preset{padding:8px 3px}.stagebar-left .status-text{display:none}.light-item{grid-template-columns:25px 1fr auto auto}}
     @media(prefers-reduced-motion:reduce){*{transition:none!important}}
   </style>
 </head>
@@ -135,6 +138,9 @@
           <button class="mode" type="button" data-mode="0" aria-pressed="true">合成</button>
           <button class="mode" type="button" data-mode="1" aria-pressed="false">深度</button>
           <button class="mode" type="button" data-mode="2" aria-pressed="false">法线</button>
+          <button class="mode" type="button" data-mode="3" aria-pressed="false">原画</button>
+          <button class="mode" type="button" data-mode="4" aria-pressed="false">纯光照</button>
+          <button class="mode" type="button" data-mode="5" aria-pressed="false">对比</button>
         </div>
         <div class="control"><div class="label-row"><span>视差强度</span><output id="depthScaleOut">4.0%</output></div><input id="depthScale" type="range" min="0" max="12" step="0.1" value="4"></div>
         <div class="control"><div class="label-row"><span>深度对比</span><output id="contrastOut">1.20</output></div><input id="contrast" type="range" min="0.4" max="3" step="0.05" value="1.2"></div>
@@ -157,9 +163,11 @@
       <div class="stagebar">
         <div class="stagebar-left"><span class="status-dot"></span><span class="status-text" id="stageStatus">GPU 渲染管线</span></div>
         <div class="stagebar-right">
-          <button class="iconbtn active" id="pointerMode" type="button" title="拖动镜头" aria-label="拖动镜头">
-            <svg viewBox="0 0 24 24"><path d="m8 3 9 8-4 1 2.5 5.5-2.7 1.2-2.4-5.5L7 16z"/></svg>
-          </button>
+          <div class="stage-modes" aria-label="鼠标交互模式">
+            <button class="iconbtn" id="viewTool" type="button" title="视角模式（V）" aria-label="视角模式" aria-pressed="true"><svg viewBox="0 0 24 24"><path d="m8 3 9 8-4 1 2.5 5.5-2.7 1.2-2.4-5.5L7 16z"/></svg></button>
+            <button class="iconbtn" id="lightTool" type="button" title="灯光模式（L）" aria-label="灯光模式" aria-pressed="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="5"/><path d="M9 16h6M10 20h4M12 2V0M4.2 4.2 2.8 2.8m17 1.4 1.4-1.4"/></svg></button>
+            <button class="iconbtn" id="paintTool" type="button" title="绘制模式（B）" aria-label="绘制模式" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m4 20 5-1 10-10-4-4L5 15zM13 7l4 4"/></svg></button>
+          </div>
           <button class="iconbtn" id="centerView" type="button" title="镜头归中" aria-label="镜头归中">
             <svg viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M8 21H3v-5m13 5h5v-5"/></svg>
           </button>
@@ -167,9 +175,10 @@
       </div>
       <div class="canvas-wrap" id="canvasWrap">
         <canvas id="glcanvas"></canvas>
-        <div class="light-marker" id="lightMarker"></div>
+        <div class="light-gizmos" id="lightGizmos"></div>
+        <div class="compare-handle" id="compareHandle" role="slider" aria-label="对比分界线" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" tabindex="0"></div>
         <div class="canvas-hud"><span class="hud-chip" id="resChip">DEMO · 1200×900</span><span class="hud-chip" id="fpsChip">60 FPS</span></div>
-        <div class="tip" id="canvasTip">拖动改变视角 · 双击放置选中灯光</div>
+        <div class="tip" id="canvasTip">拖动改变视角 · V/L/B 切换模式</div>
       </div>
       <div class="unsupported" id="unsupported"><div><h2>当前环境不支持 WebGL</h2><p>请在启用硬件加速的现代浏览器中打开，即可使用实时视差与光照。</p></div></div>
     </section>
@@ -177,9 +186,16 @@
     <aside class="panel right">
       <div class="panel-title"><h2>灯光工作台</h2><span class="step">02 / 03</span></div>
       <section class="section">
-        <div class="section-head"><h3>场景灯光</h3><output id="lightCount">2 / 3</output></div>
+        <div class="section-head"><h3>场景灯光</h3><output id="lightCount">2 / 8</output></div>
         <div class="lights" id="lightList"></div>
         <button class="add-light" id="addLight" type="button">＋ 添加灯光</button>
+        <p class="mini">最多支持 8 盏实时灯光</p>
+      </section>
+      <section class="section">
+        <div class="section-head"><h3>灯光预设</h3></div>
+        <div class="presets" id="presets">
+          <button class="preset" type="button" data-preset="standard">标准双灯</button><button class="preset" type="button" data-preset="sunset">日落</button><button class="preset" type="button" data-preset="night">夜晚</button><button class="preset" type="button" data-preset="top">顶光</button><button class="preset" type="button" data-preset="bottom">底光</button><button class="preset" type="button" data-preset="anime">动漫双灯</button>
+        </div>
       </section>
       <section class="section" id="lightEditor">
         <div class="section-head"><h3>选中灯光</h3><output id="selectedLightName">灯光 1</output></div>
@@ -189,8 +205,16 @@
         </div>
         <div class="control"><div class="label-row"><span>亮度</span><output id="intensityOut">1.10</output></div><input id="lightIntensity" type="range" min="0" max="2.5" step="0.05" value="1.1"></div>
         <div class="control"><div class="label-row"><span>范围</span><output id="radiusOut">48%</output></div><input id="lightRadius" type="range" min="10" max="100" step="1" value="48"></div>
-        <div class="control"><div class="label-row"><span>环境光</span><output id="ambientOut">72%</output></div><input id="ambient" type="range" min="15" max="120" step="1" value="72"></div>
-        <p class="mini">双击画面可移动选中灯光；灯光与表面法线实时计算。</p>
+        <div class="control"><div class="label-row"><span>高度</span><output id="heightOut">0.62</output></div><input id="lightHeight" type="range" min="0" max="1" step="0.01" value="0.62"></div>
+        <div class="dual control">
+          <div><div class="label-row"><span>环境光</span><output id="ambientOut">72%</output></div><input id="ambient" type="range" min="15" max="120" step="1" value="72"></div>
+          <div><div class="label-row"><span>环境颜色</span></div><input type="color" id="ambientColor" value="#ffffff" aria-label="环境光颜色"></div>
+        </div>
+        <div class="control"><div class="label-row"><span>曝光</span><output id="exposureOut">1.00</output></div><input id="exposure" type="range" min="0.3" max="2" step="0.05" value="1"></div>
+        <div class="control"><div class="label-row"><span>边缘光</span><output id="rimOut">0.25</output></div><input id="rim" type="range" min="0" max="1" step="0.05" value="0.25"></div>
+        <div class="check"><span>卡通阴影</span><button class="switch" id="celSwitch" type="button" role="switch" aria-checked="false" aria-label="卡通阴影"></button></div>
+        <div class="check"><span>灯光环绕</span><button class="switch" id="orbitSwitch" type="button" role="switch" aria-checked="false" aria-label="灯光环绕"></button></div>
+        <p class="mini">切到灯光模式后拖动灯位，滚轮调高度；灯光与表面法线实时计算。</p>
       </section>
       <section class="section">
         <details class="tech" open>
@@ -215,48 +239,41 @@
 
   const vs=`attribute vec2 aPos; varying vec2 vUv; void main(){vUv=aPos*.5+.5;gl_Position=vec4(aPos,0.,1.);}`;
   const fs=`precision highp float;
-    varying vec2 vUv; uniform sampler2D uImage,uDepth; uniform vec2 uView,uTexel; uniform float uScale,uContrast,uNormalStrength,uInvert,uAmbient,uTime; uniform int uMode;
-    uniform vec3 uLightPos[3]; uniform vec3 uLightColor[3]; uniform float uLightPower[3]; uniform float uLightRadius[3]; uniform float uLightEnabled[3]; uniform float uBlend;
+    varying vec2 vUv; uniform sampler2D uImage,uDepth; uniform vec2 uView,uTexel; uniform float uScale,uContrast,uNormalStrength,uInvert,uAmbient,uTime,uSplit,uExposure,uRim,uCel; uniform int uMode;
+    uniform vec3 uAmbientColor; uniform vec3 uLightPos[8]; uniform vec3 uLightColor[8]; uniform float uLightPower[8]; uniform float uLightRadius[8]; uniform float uLightEnabled[8]; uniform float uBlend;
     float depthAt(vec2 uv){float d=texture2D(uDepth,clamp(uv,0.,1.)).r;d=mix(d,1.-d,uInvert);return clamp((d-.5)*uContrast+.5,0.,1.);}
     void main(){
       vec2 base=mix(vec2(.035),vec2(.965),vUv);
-      float d0=depthAt(base);
-      vec2 uv=base-uView*uScale*(d0-.28);
-      float d=depthAt(uv);
-      uv=base-uView*uScale*(d-.28);
-      uv=clamp(uv,.002,.998);
-      d=depthAt(uv);
+      float d0=depthAt(base); vec2 uv=base-uView*uScale*(d0-.28); float d=depthAt(uv);
+      uv=clamp(base-uView*uScale*(d-.28),.002,.998); d=depthAt(uv);
       float dx=depthAt(uv+vec2(uTexel.x,0.))-depthAt(uv-vec2(uTexel.x,0.));
       float dy=depthAt(uv+vec2(0.,uTexel.y))-depthAt(uv-vec2(0.,uTexel.y));
       vec3 n=normalize(vec3(-dx*uNormalStrength/uTexel.x*.006,-dy*uNormalStrength/uTexel.y*.006,1.));
-      if(uMode==1){gl_FragColor=vec4(vec3(d),1.);return;}
-      if(uMode==2){gl_FragColor=vec4(n*.5+.5,1.);return;}
-      vec3 baseColor=texture2D(uImage,uv).rgb;
-      vec3 lit=baseColor*uAmbient;
-      for(int i=0;i<3;i++){
-        vec3 surface=vec3(vUv,d*.18);
-        vec3 delta=uLightPos[i]-surface;
-        float dist=length(delta.xy);
-        float fall=pow(clamp(1.-dist/max(uLightRadius[i],.01),0.,1.),1.7);
-        float ndl=max(dot(n,normalize(delta)),0.);
+      if(uMode==1){gl_FragColor=vec4(vec3(d),1.);return;} if(uMode==2){gl_FragColor=vec4(n*.5+.5,1.);return;}
+      vec3 original=texture2D(uImage,vUv).rgb; if(uMode==3){gl_FragColor=vec4(original,1.);return;}
+      vec3 baseColor=uMode==4?vec3(1.):texture2D(uImage,uv).rgb; vec3 lit=baseColor*uAmbient*uAmbientColor; float maxNdl=0.;
+      for(int i=0;i<8;i++){
+        vec3 surface=vec3(vUv,d*.18); vec3 delta=uLightPos[i]-surface; float dist=length(delta.xy);
+        float fall=pow(clamp(1.-dist/max(uLightRadius[i],.01),0.,1.),1.7); float ndl=max(dot(n,normalize(delta)),0.);
+        if(uCel>.5) ndl=ndl<.35?.06:(ndl<.7?.55:1.); maxNdl=max(maxNdl,ndl*uLightEnabled[i]);
         float amount=(.16+ndl*.84)*fall*uLightPower[i]*uLightEnabled[i];
         if(uBlend<.5) lit+=baseColor*uLightColor[i]*amount*.72; else lit+=uLightColor[i]*amount*.62;
       }
-      float vignette=smoothstep(1.12,.28,length(vUv-.5));
-      lit*=mix(.93,1.,vignette);
-      gl_FragColor=vec4(pow(clamp(lit,0.,1.),vec3(.98)),1.);
+      lit+=vec3(1.)*pow(1.-maxNdl,2.5)*uRim*.6; float vignette=smoothstep(1.12,.28,length(vUv-.5)); lit*=mix(.93,1.,vignette); lit*=uExposure;
+      vec3 composite=pow(clamp(lit,0.,1.),vec3(.98)); if(uMode==5&&vUv.x<uSplit) composite=original;
+      gl_FragColor=vec4(composite,1.);
     }`;
   function shader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s}
   const program=gl.createProgram();gl.attachShader(program,shader(gl.VERTEX_SHADER,vs));gl.attachShader(program,shader(gl.FRAGMENT_SHADER,fs));gl.linkProgram(program);gl.useProgram(program);
   const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
   const pos=gl.getAttribLocation(program,'aPos');gl.enableVertexAttribArray(pos);gl.vertexAttribPointer(pos,2,gl.FLOAT,false,0,0);
-  const U={};['uImage','uDepth','uView','uTexel','uScale','uContrast','uNormalStrength','uInvert','uAmbient','uTime','uMode','uLightPos','uLightColor','uLightPower','uLightRadius','uLightEnabled','uBlend'].forEach(n=>U[n]=gl.getUniformLocation(program,n));
+  const U={};['uImage','uDepth','uView','uTexel','uScale','uContrast','uNormalStrength','uInvert','uAmbient','uAmbientColor','uExposure','uRim','uCel','uSplit','uTime','uMode','uLightPos','uLightColor','uLightPower','uLightRadius','uLightEnabled','uBlend'].forEach(n=>U[n]=gl.getUniformLocation(program,n));
 
   function makeTexture(unit){const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,t);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);return t}
   const imageTex=makeTexture(0),depthTex=makeTexture(1);gl.uniform1i(U.uImage,0);gl.uniform1i(U.uDepth,1);
   let sourceCanvas=document.createElement('canvas'),depthCanvas=document.createElement('canvas'),sourceW=1200,sourceH=900;
-  let mode=0,invert=false,auto=true,paintMode=0,dragging=false,lastPointer=null,hasUserImage=false;
-  let targetView={x:0,y:0},view={x:0,y:0},frames=0,lastFps=performance.now();
+  let mode=0,invert=false,auto=true,paintMode=0,toolMode='view',dragging=false,lastPointer=null,hasUserImage=false;
+  let split=.5,cel=false,orbit=false,lastOrbit=0,targetView={x:0,y:0},view={x:0,y:0},frames=0,lastFps=performance.now();
   let aiSession=null,aiBusy=false;
   const AI_MODEL_URL='https://huggingface.co/onnx-community/depth-anything-v2-small/resolve/main/onnx/model.onnx';
   const ORT_WASM_PATH='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
@@ -342,36 +359,50 @@
   function resize(){const r=wrap.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);const w=Math.round(r.width*dpr),h=Math.round(r.height*dpr);if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h)}}
   function hexRgb(h){return[parseInt(h.slice(1,3),16)/255,parseInt(h.slice(3,5),16)/255,parseInt(h.slice(5,7),16)/255]}
   function render(t){
-    resize();if(auto&&!dragging&&paintMode===0){targetView.x=Math.sin(t*.00038)*.34;targetView.y=Math.cos(t*.00031)*.2}view.x+=(targetView.x-view.x)*.065;view.y+=(targetView.y-view.y)*.065;
-    gl.uniform2f(U.uView,view.x,view.y);gl.uniform2f(U.uTexel,1/sourceW,1/sourceH);gl.uniform1f(U.uScale,+$('#depthScale').value/100);gl.uniform1f(U.uContrast,+$('#contrast').value);gl.uniform1f(U.uNormalStrength,+$('#normalStrength').value);gl.uniform1f(U.uInvert,invert?1:0);gl.uniform1f(U.uAmbient,+$('#ambient').value/100);gl.uniform1f(U.uTime,t/1000);gl.uniform1i(U.uMode,mode);gl.uniform1f(U.uBlend,+$('#blendMode').value);
-    const lp=[],lc=[],pw=[],ra=[],en=[];for(let i=0;i<3;i++){const l=lights[i]||{x:0,y:0,z:.5,color:'#ffffff',power:0,radius:.2,on:0};lp.push(l.x,1-l.y,l.z);lc.push(...hexRgb(l.color));pw.push(l.power);ra.push(l.radius);en.push(l.on)}
+    resize();if(auto&&!dragging&&toolMode==='view'){targetView.x=Math.sin(t*.00038)*.34;targetView.y=Math.cos(t*.00031)*.2}view.x+=(targetView.x-view.x)*.065;view.y+=(targetView.y-view.y)*.065;
+    if(orbit){const dt=lastOrbit?Math.min((t-lastOrbit)/1000,.05):0,angle=dt*.24,cs=Math.cos(angle),sn=Math.sin(angle);lights.forEach(l=>{if(!l.on)return;const x=l.x-.5,y=l.y-.5;l.x=.5+x*cs-y*sn;l.y=.5+x*sn+y*cs});updateGizmos()}lastOrbit=t;
+    gl.uniform2f(U.uView,view.x,view.y);gl.uniform2f(U.uTexel,1/sourceW,1/sourceH);gl.uniform1f(U.uScale,+$('#depthScale').value/100);gl.uniform1f(U.uContrast,+$('#contrast').value);gl.uniform1f(U.uNormalStrength,+$('#normalStrength').value);gl.uniform1f(U.uInvert,invert?1:0);gl.uniform1f(U.uAmbient,+$('#ambient').value/100);gl.uniform3fv(U.uAmbientColor,new Float32Array(hexRgb($('#ambientColor').value)));gl.uniform1f(U.uExposure,+$('#exposure').value);gl.uniform1f(U.uRim,+$('#rim').value);gl.uniform1f(U.uCel,cel?1:0);gl.uniform1f(U.uSplit,mode===5?split:-1);gl.uniform1f(U.uTime,t/1000);gl.uniform1i(U.uMode,mode);gl.uniform1f(U.uBlend,+$('#blendMode').value);
+    const lp=[],lc=[],pw=[],ra=[],en=[];for(let i=0;i<8;i++){const l=lights[i]||{x:0,y:0,z:.5,color:'#ffffff',power:0,radius:.2,on:0};lp.push(l.x,1-l.y,l.z);lc.push(...hexRgb(l.color));pw.push(l.power);ra.push(l.radius);en.push(l.on)}
     gl.uniform3fv(U.uLightPos,new Float32Array(lp));gl.uniform3fv(U.uLightColor,new Float32Array(lc));gl.uniform1fv(U.uLightPower,new Float32Array(pw));gl.uniform1fv(U.uLightRadius,new Float32Array(ra));gl.uniform1fv(U.uLightEnabled,new Float32Array(en));gl.drawArrays(gl.TRIANGLES,0,6);
     frames++;if(t-lastFps>700){$('#fpsChip').textContent=Math.round(frames*1000/(t-lastFps))+' FPS';frames=0;lastFps=t}requestAnimationFrame(render)
   }
-  function renderLights(){const list=$('#lightList');list.innerHTML='';lights.forEach((l,i)=>{const el=document.createElement('div');el.className='light-item'+(i===selected?' active':'');el.innerHTML='<span class="light-swatch" style="--swatch:'+l.color+'"></span><div><div class="light-name">'+l.name+'</div><div class="light-pos">X '+Math.round(l.x*100)+' · Y '+Math.round(l.y*100)+'</div></div><button class="light-toggle" type="button" aria-label="开关灯光">'+(l.on?'●':'○')+'</button>';el.addEventListener('click',e=>{if(e.target.closest('.light-toggle')){l.on=l.on?0:1;renderLights();return}selected=i;renderLights();syncEditor()});list.appendChild(el)});$('#lightCount').textContent=lights.length+' / 3';$('#addLight').disabled=lights.length>=3;updateMarker()}
-  function syncEditor(){const l=lights[selected];if(!l)return;$('#selectedLightName').textContent=l.name;$('#lightColor').value=l.color;$('#lightIntensity').value=l.power;$('#lightRadius').value=l.radius*100;$('#intensityOut').textContent=l.power.toFixed(2);$('#radiusOut').textContent=Math.round(l.radius*100)+'%';renderLights()}
-  function updateMarker(){const l=lights[selected],m=$('#lightMarker');if(!l){m.classList.remove('selected');return}m.style.left=(l.x*100)+'%';m.style.top=(l.y*100)+'%';m.style.setProperty('--marker',l.color);m.classList.add('selected')}
+  function renderLights(){const list=$('#lightList');list.innerHTML='';lights.forEach((l,i)=>{const el=document.createElement('div');el.className='light-item'+(i===selected?' active':'');el.innerHTML='<span class="light-swatch" style="--swatch:'+l.color+'"></span><div><div class="light-name">'+l.name+'</div><div class="light-pos">X '+Math.round(l.x*100)+' · Y '+Math.round(l.y*100)+' · Z '+Math.round(l.z*100)+'</div></div><button class="light-toggle" type="button" aria-label="开关灯光">'+(l.on?'●':'○')+'</button><button class="light-delete" type="button" aria-label="删除灯光">×</button>';el.addEventListener('click',e=>{if(e.target.closest('.light-delete')){deleteLight(i);return}if(e.target.closest('.light-toggle')){l.on=l.on?0:1;renderLights();return}selected=i;renderLights();syncEditor()});list.appendChild(el)});$('#lightCount').textContent=lights.length+' / 8';$('#addLight').disabled=lights.length>=8;updateGizmos()}
+  function syncEditor(){const l=lights[selected];if(!l){$('#selectedLightName').textContent='暂无灯光';return}$('#selectedLightName').textContent=l.name;$('#lightColor').value=l.color;$('#lightIntensity').value=l.power;$('#lightRadius').value=l.radius*100;$('#lightHeight').value=l.z;$('#intensityOut').textContent=l.power.toFixed(2);$('#radiusOut').textContent=Math.round(l.radius*100)+'%';$('#heightOut').textContent=l.z.toFixed(2);renderLights()}
+  function updateGizmos(){const root=$('#lightGizmos');root.innerHTML='';lights.forEach((l,i)=>{const m=document.createElement('span');m.className='light-marker'+(i===selected?' selected':'');m.textContent=i+1;m.style.left=(l.x*100)+'%';m.style.top=(l.y*100)+'%';m.style.setProperty('--marker',l.color);root.appendChild(m)})}
+  function deleteLight(i){if(i<0||i>=lights.length)return;lights.splice(i,1);selected=Math.min(selected,lights.length-1);renderLights();syncEditor();notify('已删除灯光')}
+  function hitLight(e){const r=canvas.getBoundingClientRect(),px=e.clientX-r.left,py=e.clientY-r.top;let hit=-1,best=24;lights.forEach((l,i)=>{const d=Math.hypot(px-l.x*r.width,py-l.y*r.height);if(d<=best){best=d;hit=i}});return hit}
   function notify(msg){const n=$('#notice');n.textContent=msg;n.classList.add('show');clearTimeout(notify.t);notify.t=setTimeout(()=>n.classList.remove('show'),1800)}
   function switcher(el,state){el.classList.toggle('on',state);el.setAttribute('aria-checked',state?'true':'false')}
-  function setPaint(n){paintMode=paintMode===n?0:n;$('#paintNear').setAttribute('aria-pressed',paintMode===1);$('#paintFar').setAttribute('aria-pressed',paintMode===-1);$('#brushStatus').textContent=paintMode===1?'涂近':paintMode===-1?'涂远':'关闭';canvas.classList.toggle('painting',paintMode!==0);$('#pointerMode').classList.toggle('active',paintMode===0);$('#canvasTip').textContent=paintMode?'按住拖动绘制深度':'拖动改变视角 · 双击放置选中灯光'}
+  function setTool(next,paintValue){toolMode=next;if(next==='paint')paintMode=paintValue||paintMode||1;else paintMode=0;['view','light','paint'].forEach(n=>$('#'+n+'Tool').setAttribute('aria-pressed',n===next));canvas.classList.toggle('painting',next==='paint');canvas.classList.toggle('light-moving',next==='light');$('#paintNear').setAttribute('aria-pressed',next==='paint'&&paintMode===1);$('#paintFar').setAttribute('aria-pressed',next==='paint'&&paintMode===-1);$('#brushStatus').textContent=next==='paint'?(paintMode===1?'涂近':'涂远'):'关闭';$('#canvasTip').textContent=next==='view'?'拖动改变视角 · V/L/B 切换模式':next==='light'?'拖动移动灯光 · 滚轮调高度 · 双击添加灯光 · Delete 删除':'按住拖动绘制深度'}
+  function setPaint(n){setTool('paint',n)}
   function paintAt(e){const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*sourceW,y=(e.clientY-r.top)/r.height*sourceH,size=+$('#brushSize').value*sourceW/900;const c=depthCanvas.getContext('2d');c.save();c.fillStyle=paintMode===1?'rgba(255,255,255,.14)':'rgba(0,0,0,.14)';c.beginPath();c.arc(x,y,size,0,Math.PI*2);c.fill();c.restore();uploadTexture(depthTex,depthCanvas,1)}
 
   $('#imageInput').addEventListener('change',e=>readFile(e.target.files[0],setSource));$('#depthInput').addEventListener('change',e=>readFile(e.target.files[0],loadDepth));
   ['imageDrop','depthDrop'].forEach((id,idx)=>{const el=$('#'+id),input=idx?$('#depthInput'):$('#imageInput');el.addEventListener('click',e=>{if(e.target!==input)input.click()});el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();input.click()}});el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('drag')});el.addEventListener('dragleave',()=>el.classList.remove('drag'));el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('drag');readFile(e.dataTransfer.files[0],idx?loadDepth:setSource)})});
-  $$('#viewModes .mode').forEach(b=>b.addEventListener('click',()=>{mode=+b.dataset.mode;$$('#viewModes .mode').forEach(x=>x.setAttribute('aria-pressed',x===b))}));
+  function setViewMode(n){mode=n;$$('#viewModes .mode').forEach(x=>x.setAttribute('aria-pressed',+x.dataset.mode===n));$('#compareHandle').classList.toggle('show',n===5);$('#compareHandle').style.left=(split*100)+'%'}
+  $$('#viewModes .mode').forEach(b=>b.addEventListener('click',()=>setViewMode(+b.dataset.mode)));
   function bindRange(id,out,fmt){$(id).addEventListener('input',e=>$(out).textContent=fmt(+e.target.value))}
-  bindRange('#depthScale','#depthScaleOut',v=>v.toFixed(1)+'%');bindRange('#contrast','#contrastOut',v=>v.toFixed(2));bindRange('#normalStrength','#normalOut',v=>v.toFixed(1)+'×');bindRange('#brushSize','#brushOut',v=>v+' px');bindRange('#ambient','#ambientOut',v=>v+'%');
-  $('#invertSwitch').addEventListener('click',()=>{invert=!invert;switcher($('#invertSwitch'),invert)});$('#autoSwitch').addEventListener('click',()=>{auto=!auto;switcher($('#autoSwitch'),auto)});
-  $('#paintNear').addEventListener('click',()=>setPaint(1));$('#paintFar').addEventListener('click',()=>setPaint(-1));$('#pointerMode').addEventListener('click',()=>setPaint(0));$('#regenDepth').addEventListener('click',()=>generateDepth(false));$('#aiDepthBtn').addEventListener('click',generateAIDepth);
+  bindRange('#depthScale','#depthScaleOut',v=>v.toFixed(1)+'%');bindRange('#contrast','#contrastOut',v=>v.toFixed(2));bindRange('#normalStrength','#normalOut',v=>v.toFixed(1)+'×');bindRange('#brushSize','#brushOut',v=>v+' px');bindRange('#ambient','#ambientOut',v=>v+'%');bindRange('#exposure','#exposureOut',v=>v.toFixed(2));bindRange('#rim','#rimOut',v=>v.toFixed(2));
+  $('#invertSwitch').addEventListener('click',()=>{invert=!invert;switcher($('#invertSwitch'),invert)});$('#autoSwitch').addEventListener('click',()=>{auto=!auto;switcher($('#autoSwitch'),auto)});$('#celSwitch').addEventListener('click',()=>{cel=!cel;switcher($('#celSwitch'),cel)});$('#orbitSwitch').addEventListener('click',()=>{orbit=!orbit;lastOrbit=0;switcher($('#orbitSwitch'),orbit)});
+  $('#paintNear').addEventListener('click',()=>setPaint(1));$('#paintFar').addEventListener('click',()=>setPaint(-1));$('#viewTool').addEventListener('click',()=>setTool('view'));$('#lightTool').addEventListener('click',()=>setTool('light'));$('#paintTool').addEventListener('click',()=>setTool('paint',1));$('#regenDepth').addEventListener('click',()=>generateDepth(false));$('#aiDepthBtn').addEventListener('click',generateAIDepth);
   $('#centerView').addEventListener('click',()=>{auto=false;switcher($('#autoSwitch'),false);targetView={x:0,y:0}});
-  canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);dragging=true;lastPointer={x:e.clientX,y:e.clientY};if(paintMode)paintAt(e);else canvas.classList.add('dragging')});
-  canvas.addEventListener('pointermove',e=>{if(!dragging)return;if(paintMode){paintAt(e);return}auto=false;switcher($('#autoSwitch'),false);const r=canvas.getBoundingClientRect();targetView.x=Math.max(-1,Math.min(1,targetView.x+(e.clientX-lastPointer.x)/r.width*2));targetView.y=Math.max(-1,Math.min(1,targetView.y-(e.clientY-lastPointer.y)/r.height*2));lastPointer={x:e.clientX,y:e.clientY}});
-  function endDrag(){dragging=false;canvas.classList.remove('dragging')}canvas.addEventListener('pointerup',endDrag);canvas.addEventListener('pointercancel',endDrag);
-  canvas.addEventListener('dblclick',e=>{if(paintMode||!lights[selected])return;const r=canvas.getBoundingClientRect();lights[selected].x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));lights[selected].y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));renderLights();syncEditor()});
-  $('#addLight').addEventListener('click',()=>{if(lights.length>=3){notify('最多支持 3 盏实时灯光');return}lights.push({name:'灯光 '+(lights.length+1),x:.5,y:.42,z:.55,color:'#b3ff9e',power:.8,radius:.38,on:1});selected=lights.length-1;renderLights();syncEditor()});
-  $('#lightColor').addEventListener('input',e=>{lights[selected].color=e.target.value;renderLights()});$('#lightIntensity').addEventListener('input',e=>{lights[selected].power=+e.target.value;$('#intensityOut').textContent=(+e.target.value).toFixed(2)});$('#lightRadius').addEventListener('input',e=>{lights[selected].radius=+e.target.value/100;$('#radiusOut').textContent=e.target.value+'%'});
+  let blankLightClickAt=0;
+  function moveSelected(e){if(!lights[selected])return;const r=canvas.getBoundingClientRect();lights[selected].x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));lights[selected].y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));updateGizmos()}
+  canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);dragging=true;lastPointer={x:e.clientX,y:e.clientY};if(toolMode==='paint')paintAt(e);else if(toolMode==='light'){const hit=hitLight(e);if(hit>=0){selected=hit;renderLights();syncEditor()}else blankLightClickAt=performance.now();if(lights[selected])moveSelected(e)}else canvas.classList.add('dragging')});
+  canvas.addEventListener('pointermove',e=>{if(!dragging)return;if(toolMode==='paint'){paintAt(e);return}if(toolMode==='light'){moveSelected(e);return}auto=false;switcher($('#autoSwitch'),false);const r=canvas.getBoundingClientRect();targetView.x=Math.max(-1,Math.min(1,targetView.x+(e.clientX-lastPointer.x)/r.width*2));targetView.y=Math.max(-1,Math.min(1,targetView.y-(e.clientY-lastPointer.y)/r.height*2));lastPointer={x:e.clientX,y:e.clientY}});
+  function endDrag(){if(dragging&&toolMode==='light')renderLights();dragging=false;canvas.classList.remove('dragging')}canvas.addEventListener('pointerup',endDrag);canvas.addEventListener('pointercancel',endDrag);
+  function addLightAt(x=.5,y=.42){if(lights.length>=8){notify('最多支持 8 盏实时灯光');return}const colors=['#ff955d','#62a8ff','#b3ff9e','#c99eff'],n=lights.length+1;lights.push({name:'灯光 '+n,x,y,z:.55,color:colors[(n-1)%colors.length],power:.8,radius:.38,on:1});selected=lights.length-1;renderLights();syncEditor()}
+  canvas.addEventListener('dblclick',e=>{if(toolMode!=='light'||performance.now()-blankLightClickAt>650)return;const r=canvas.getBoundingClientRect();addLightAt(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)));blankLightClickAt=0});
+  canvas.addEventListener('wheel',e=>{if(toolMode!=='light'||!lights[selected])return;e.preventDefault();lights[selected].z=Math.max(0,Math.min(1,lights[selected].z-e.deltaY*.001));syncEditor()},{passive:false});
+  $('#addLight').addEventListener('click',()=>addLightAt());
+  $('#lightColor').addEventListener('input',e=>{if(!lights[selected])return;lights[selected].color=e.target.value;renderLights()});$('#lightIntensity').addEventListener('input',e=>{if(!lights[selected])return;lights[selected].power=+e.target.value;$('#intensityOut').textContent=(+e.target.value).toFixed(2)});$('#lightRadius').addEventListener('input',e=>{if(!lights[selected])return;lights[selected].radius=+e.target.value/100;$('#radiusOut').textContent=e.target.value+'%'});$('#lightHeight').addEventListener('input',e=>{if(!lights[selected])return;lights[selected].z=+e.target.value;$('#heightOut').textContent=(+e.target.value).toFixed(2);renderLights()});
   $('#blendMode').addEventListener('change',()=>{});
-  $('#resetBtn').addEventListener('click',()=>{drawDemo();uploadTexture(imageTex,sourceCanvas,0);invert=false;auto=true;mode=0;paintMode=0;hasUserImage=false;$('#aiDepthBtn').disabled=true;$('#aiDepthBtn').textContent='先导入原图';$('#aiProgress').hidden=true;targetView={x:0,y:0};view={x:0,y:0};lights=[{name:'暖色主灯',x:.28,y:.28,z:.62,color:'#ff955d',power:1.1,radius:.48,on:1},{name:'冷色轮廓',x:.76,y:.62,z:.5,color:'#62a8ff',power:.72,radius:.42,on:1}];selected=0;$('#depthScale').value=4;$('#contrast').value=1.2;$('#normalStrength').value=2.4;$('#ambient').value=72;$('#blendMode').value=0;$('#depthScaleOut').textContent='4.0%';$('#contrastOut').textContent='1.20';$('#normalOut').textContent='2.4×';$('#ambientOut').textContent='72%';switcher($('#invertSwitch'),false);switcher($('#autoSwitch'),true);setPaint(0);$$('#viewModes .mode').forEach((x,i)=>x.setAttribute('aria-pressed',i===0));$('#resChip').textContent='DEMO · 1200×900';$('#stageStatus').textContent='GPU 渲染管线';renderLights();syncEditor();notify('已恢复初始场景')});
+  const PRESETS={standard:{ambient:72,lights:[['暖主灯',.30,.30,'#ff955d',1.15,.48,.62],['冷轮廓',.74,.62,'#62a8ff',.75,.42,.50]]},sunset:{ambient:45,lights:[['低角度橙光',.12,.58,'#ff7a2d',1.35,.55,.45],['弱蓝补光',.80,.30,'#3a5a8c',.35,.50,.60]]},night:{ambient:30,lights:[['顶部冷光',.50,.18,'#7a9cc6',.90,.50,.70]]},top:{ambient:60,lights:[['顶光',.50,.15,'#fff2df',1.20,.50,.75]]},bottom:{ambient:55,lights:[['底光',.50,.85,'#ff9a5d',1.20,.50,.55]]},anime:{ambient:80,lights:[['亮主光',.35,.25,'#ffffff',1.25,.55,.60],['补光',.70,.55,'#bcd6ff',.60,.50,.50]]}};
+  $('#presets').addEventListener('click',e=>{const b=e.target.closest('[data-preset]');if(!b)return;const p=PRESETS[b.dataset.preset];lights=p.lights.map(x=>({name:x[0],x:x[1],y:x[2],color:x[3],power:x[4],radius:x[5],z:x[6],on:1}));selected=0;$('#ambient').value=p.ambient;$('#ambientOut').textContent=p.ambient+'%';renderLights();syncEditor();notify('已应用「'+b.textContent+'」预设')});
+  function setSplitFromClient(x){const r=wrap.getBoundingClientRect();split=Math.max(.04,Math.min(.96,(x-r.left)/r.width));$('#compareHandle').style.left=(split*100)+'%';$('#compareHandle').setAttribute('aria-valuenow',Math.round(split*100))}
+  let splitDragging=false;$('#compareHandle').addEventListener('pointerdown',e=>{e.stopPropagation();splitDragging=true;$('#compareHandle').setPointerCapture(e.pointerId)});$('#compareHandle').addEventListener('pointermove',e=>{if(splitDragging)setSplitFromClient(e.clientX)});$('#compareHandle').addEventListener('pointerup',()=>splitDragging=false);$('#compareHandle').addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){split=Math.max(.04,Math.min(.96,split+(e.key==='ArrowRight'?.02:-.02)));setSplitFromClient(wrap.getBoundingClientRect().left+split*wrap.clientWidth)}});
+  document.addEventListener('keydown',e=>{if(/input|select|textarea/i.test(e.target.tagName))return;if(e.key==='v'||e.key==='V')setTool('view');else if(e.key==='l'||e.key==='L')setTool('light');else if(e.key==='b'||e.key==='B')setTool('paint',1);else if(e.key==='Delete'&&lights[selected])deleteLight(selected)});
+  $('#resetBtn').addEventListener('click',()=>{drawDemo();uploadTexture(imageTex,sourceCanvas,0);invert=false;auto=true;cel=false;orbit=false;split=.5;lastOrbit=0;hasUserImage=false;$('#aiDepthBtn').disabled=true;$('#aiDepthBtn').textContent='先导入原图';$('#aiProgress').hidden=true;targetView={x:0,y:0};view={x:0,y:0};lights=[{name:'暖色主灯',x:.28,y:.28,z:.62,color:'#ff955d',power:1.1,radius:.48,on:1},{name:'冷色轮廓',x:.76,y:.62,z:.5,color:'#62a8ff',power:.72,radius:.42,on:1}];selected=0;$('#depthScale').value=4;$('#contrast').value=1.2;$('#normalStrength').value=2.4;$('#ambient').value=72;$('#ambientColor').value='#ffffff';$('#exposure').value=1;$('#rim').value=.25;$('#blendMode').value=0;$('#depthScaleOut').textContent='4.0%';$('#contrastOut').textContent='1.20';$('#normalOut').textContent='2.4×';$('#ambientOut').textContent='72%';$('#exposureOut').textContent='1.00';$('#rimOut').textContent='0.25';switcher($('#invertSwitch'),false);switcher($('#autoSwitch'),true);switcher($('#celSwitch'),false);switcher($('#orbitSwitch'),false);setTool('view');setViewMode(0);$('#resChip').textContent='DEMO · 1200×900';$('#stageStatus').textContent='GPU 渲染管线';renderLights();syncEditor();notify('已恢复初始场景')});
   $('#exportBtn').addEventListener('click',()=>{requestAnimationFrame(()=>{canvas.toBlob(blob=>{if(!blob){notify('导出失败');return}const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='pseudo-3d-'+Date.now()+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);notify('PNG 已导出')},'image/png')})});
   window.addEventListener('resize',resize);
   drawDemo();uploadTexture(imageTex,sourceCanvas,0);renderLights();syncEditor();requestAnimationFrame(render);
