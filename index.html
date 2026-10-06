@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" href="data:," />
+  <title>2D 伪 3D 工具</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Source+Code+Pro:wght@500&display=swap');
+    :root{
+      color-scheme:light dark;
+      --bg:#ebeae7; --panel:#f7f6f3; --panel-2:#deddd9; --ink:#171816; --muted:#656761;
+      --line:#c9c8c2; --accent:#ff5a36; --accent-ink:#240a03; --mint:#b6efc2; --stage:#101210;
+      --shadow:0 18px 44px rgba(30,28,24,.14); --focus:#1769ff;
+    }
+    @media(prefers-color-scheme:dark){
+      :root{--bg:#161714;--panel:#20211e;--panel-2:#2a2c27;--ink:#f4f3ec;--muted:#a9aaa3;--line:#3a3c36;--accent:#ff6a46;--accent-ink:#190500;--mint:#77d98e;--stage:#080907;--shadow:0 18px 54px rgba(0,0,0,.34);--focus:#7da8ff}
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:"Noto Sans SC",system-ui,sans-serif}
+    button,input,label,select{font:inherit}
+    button{color:inherit}
+    button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+    .shell{max-width:1530px;margin:0 auto;padding:18px clamp(12px,2vw,30px) 28px}
+    .topline{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:14px}
+    .intro h1{font-size:clamp(24px,2.4vw,40px);line-height:1.03;letter-spacing:-.04em;margin:0 0 7px;font-weight:700}
+    .intro p{margin:0;color:var(--muted);font-size:14px}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:9px 13px;cursor:pointer;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:7px;min-height:40px;transition:background .18s,border-color .18s,color .18s}
+    .btn:hover{background:var(--panel-2)}
+    .btn.primary{background:var(--accent);border-color:var(--accent);color:#190600}
+    .btn.primary:hover{filter:brightness(.96)}
+    .btn svg{width:16px;height:16px;stroke-width:1.8;fill:none;stroke:currentColor}
+    .workspace{display:grid;grid-template-columns:minmax(228px,270px) minmax(430px,1fr) minmax(224px,270px);gap:12px;align-items:start}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 1px 0 rgba(255,255,255,.18)}
+    .panel-title{padding:14px 15px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .panel-title h2{font-size:14px;margin:0;font-weight:700}
+    .panel-title .step{font-family:"Source Code Pro",monospace;font-size:11px;color:var(--muted)}
+    .section{padding:13px 15px;border-bottom:1px solid var(--line)}
+    .section:last-child{border-bottom:0}
+    .section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .section-head h3{font-size:12px;margin:0;font-weight:700}
+    .section-head output{font-family:"Source Code Pro",monospace;font-size:11px;color:var(--muted)}
+    .drop{position:relative;border:1px dashed var(--line);background:var(--bg);border-radius:7px;padding:14px 10px;text-align:center;cursor:pointer;transition:.18s}
+    .drop:hover,.drop.drag{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--panel))}
+    .drop strong{display:block;font-size:12px;margin-bottom:4px}.drop span{font-size:10px;color:var(--muted)}
+    .drop input{display:none}.drop:focus-visible{outline:2px solid var(--focus);outline-offset:2px}.tech a{display:inline-block;max-width:100%;overflow-wrap:anywhere}
+    .sep{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:10px;margin:10px 0}.sep:before,.sep:after{content:"";height:1px;background:var(--line);flex:1}
+    .mode-row{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+    .mode{border:1px solid var(--line);background:transparent;padding:7px 3px;border-radius:6px;font-size:11px;cursor:pointer}
+    .mode[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--panel)}
+    .control{margin-top:12px}.control:first-child{margin-top:0}
+    .label-row{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:7px;font-size:11px;color:var(--muted)}
+    .label-row output{color:var(--ink);font-family:"Source Code Pro",monospace;font-size:10px}
+    input[type="range"]{appearance:none;width:100%;height:4px;background:var(--panel-2);border-radius:2px;margin:0;display:block}
+    input[type="range"]::-webkit-slider-thumb{appearance:none;width:15px;height:15px;border-radius:50%;background:var(--ink);border:3px solid var(--panel);box-shadow:0 0 0 1px var(--ink);cursor:pointer}
+    .check{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px;margin-top:12px;color:var(--muted)}
+    .switch{width:34px;height:19px;background:var(--panel-2);border:1px solid var(--line);border-radius:20px;position:relative;cursor:pointer;flex:none}
+    .switch:after{content:"";position:absolute;width:13px;height:13px;left:2px;top:2px;border-radius:50%;background:var(--muted);transition:.2s}
+    .switch.on{background:var(--mint);border-color:color-mix(in srgb,var(--mint),#000 18%)}.switch.on:after{left:17px;background:#17381d}
+    .stage-panel{background:var(--stage);border:1px solid #262823;border-radius:10px;overflow:hidden;box-shadow:var(--shadow);position:relative;min-height:540px}
+    .stagebar{height:46px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;color:#d7dad2;background:#171916;border-bottom:1px solid #2d302a}
+    .stagebar-left,.stagebar-right{display:flex;align-items:center;gap:8px}
+    .status-dot{width:7px;height:7px;border-radius:50%;background:#7be491;box-shadow:0 0 0 3px rgba(123,228,145,.12)}
+    .status-text{font-size:11px;color:#a9ada4}
+    .iconbtn{width:30px;height:30px;border:1px solid #33362f;border-radius:6px;background:#21231f;color:#c9ccc4;display:grid;place-items:center;cursor:pointer}
+    .iconbtn:hover,.iconbtn.active{background:#373b33;color:#fff}.iconbtn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8}
+    .canvas-wrap{position:relative;width:100%;height:auto;aspect-ratio:var(--art-aspect,4 / 3);min-height:0;display:grid;place-items:center;overflow:hidden;touch-action:none;background-color:#0b0c0a;background-image:linear-gradient(45deg,#11130f 25%,transparent 25%),linear-gradient(-45deg,#11130f 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#11130f 75%),linear-gradient(-45deg,transparent 75%,#11130f 75%);background-size:22px 22px;background-position:0 0,0 11px,11px -11px,-11px 0px}
+    #glcanvas{display:block;width:100%;height:100%;cursor:grab}#glcanvas.dragging{cursor:grabbing}#glcanvas.painting{cursor:crosshair}
+    .canvas-hud{position:absolute;left:12px;bottom:12px;display:flex;gap:7px;pointer-events:none}
+    .hud-chip{background:rgba(10,11,9,.74);border:1px solid rgba(255,255,255,.14);color:#dfe2db;border-radius:5px;padding:5px 8px;font:10px "Source Code Pro",monospace;backdrop-filter:blur(5px)}
+    .light-marker{position:absolute;width:25px;height:25px;border:1px solid rgba(255,255,255,.8);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;display:none}.light-marker:before,.light-marker:after{content:"";position:absolute;background:rgba(255,255,255,.8)}.light-marker:before{width:1px;height:37px;left:11px;top:-7px}.light-marker:after{height:1px;width:37px;top:11px;left:-7px}.light-marker.selected{display:block;box-shadow:0 0 18px 3px var(--marker,#fff)}
+    .tip{position:absolute;right:12px;bottom:12px;color:#b9bdb4;font-size:10px;background:rgba(10,11,9,.72);padding:6px 8px;border-radius:5px;pointer-events:none}
+    .lights{display:flex;flex-direction:column;gap:7px}
+    .light-item{display:grid;grid-template-columns:25px 1fr auto;align-items:center;gap:8px;padding:8px;border:1px solid var(--line);border-radius:7px;cursor:pointer;background:transparent}
+    .light-item.active{border-color:var(--ink);background:var(--bg)}
+    .light-swatch{width:20px;height:20px;border-radius:50%;background:var(--swatch);box-shadow:inset 0 0 0 1px rgba(0,0,0,.2)}
+    .light-name{font-size:11px;font-weight:600}.light-pos{font:9px "Source Code Pro",monospace;color:var(--muted);margin-top:1px}
+    .light-toggle{border:0;background:transparent;color:var(--muted);cursor:pointer;padding:4px}
+    .add-light{width:100%;margin-top:8px;border:1px dashed var(--line);background:transparent;border-radius:7px;padding:8px;color:var(--muted);font-size:11px;cursor:pointer}.add-light:hover{color:var(--ink);border-color:var(--ink)}
+    .ai-depth{padding:12px 15px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--mint) 13%,var(--panel))}
+    .ai-depth-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:9px}.ai-depth-head strong{font-size:12px}.ai-depth-head span{font-size:9px;line-height:1.4;color:var(--muted);text-align:right}
+    .ai-button{width:100%;border:1px solid var(--ink);background:var(--ink);color:var(--panel);border-radius:7px;padding:9px 10px;font-weight:700;font-size:12px;cursor:pointer}.ai-button:hover:not(:disabled){background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}.ai-button:disabled{cursor:not-allowed;opacity:.48}
+    .ai-progress{margin-top:9px}.ai-progress[hidden]{display:none}.ai-track{height:5px;border-radius:3px;background:var(--panel-2);overflow:hidden}.ai-fill{width:0;height:100%;background:var(--accent);transition:width .16s}.ai-progress-row{display:flex;justify-content:space-between;gap:8px;margin-top:5px;font-size:9px;color:var(--muted)}
+    input[type="color"]{width:100%;height:31px;padding:2px;border:1px solid var(--line);background:var(--panel);border-radius:6px;cursor:pointer}
+    .dual{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .mini{font-size:10px;color:var(--muted)}
+    .paint-tools{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px}.paint-tools .mode{padding:8px}
+    details.tech{font-size:11px;color:var(--muted)}details.tech summary{cursor:pointer;color:var(--ink);font-weight:700;list-style:none;display:flex;justify-content:space-between}details.tech summary::-webkit-details-marker{display:none}details.tech summary:after{content:"＋"}details.tech[open] summary:after{content:"−"}
+    .tech p{line-height:1.65;margin:10px 0 0}.tech a{color:var(--ink);text-underline-offset:2px}
+    .notice{position:fixed;left:50%;bottom:18px;transform:translate(-50%,20px);background:var(--ink);color:var(--panel);padding:10px 14px;border-radius:7px;font-size:12px;opacity:0;pointer-events:none;transition:.22s;z-index:30}.notice.show{opacity:1;transform:translate(-50%,0)}
+    .unsupported{position:absolute;inset:46px 0 0;background:#11130f;color:#fff;display:none;place-items:center;text-align:center;padding:30px;z-index:6}.unsupported.show{display:grid}.unsupported h2{margin:0 0 8px;font-size:20px}.unsupported p{margin:0;color:#aeb2aa;max-width:420px;font-size:13px;line-height:1.6}
+    @media(max-width:1060px){.workspace{grid-template-columns:230px minmax(420px,1fr)}.right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.right .panel-title{grid-column:1/-1}.right .section{border-bottom:0}.right .section:first-of-type{border-right:1px solid var(--line)}}
+    @media(max-width:720px){.shell{padding:13px 10px 24px}.topline{align-items:flex-start;flex-direction:column}.actions{width:100%;justify-content:flex-start}.workspace{display:flex;flex-direction:column}.panel,.stage-panel{width:100%}.left{order:2}.stage-panel{order:1;min-height:0}.right{order:3;display:block}.right .section:first-of-type{border-right:0;border-bottom:1px solid var(--line)}.canvas-wrap{height:auto;min-height:0;aspect-ratio:var(--art-aspect,4 / 3)}.tip{display:none}.stagebar{height:42px}.intro p{font-size:12px}.btn{flex:1;justify-content:center}.mode-row{gap:4px}}
+    @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+  </style>
+</head>
+<body>
+<main class="shell">
+  <header class="topline">
+    <div class="intro">
+      <h1>把平面图变成立体镜头</h1>
+      <p>深度视差 × 法线光照。上传图片，拖动画面，再放几盏灯。</p>
+    </div>
+    <div class="actions">
+      <button class="btn" id="resetBtn" type="button" title="恢复初始设置">
+        <svg viewBox="0 0 24 24"><path d="M4 4v6h6M5.2 15A8 8 0 1 0 6 7.2L4 10"/></svg>重置
+      </button>
+      <button class="btn primary" id="exportBtn" type="button">
+        <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14"/></svg>导出 PNG
+      </button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <aside class="panel left">
+      <div class="panel-title"><h2>图像与深度</h2><span class="step">01 / 03</span></div>
+      <section class="section">
+        <div class="drop" id="imageDrop" role="button" tabindex="0" aria-label="导入原图"><strong>导入原图</strong><span>PNG / JPG / WEBP · 可拖入</span><input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp"></div>
+        <div class="sep">深度图</div>
+        <div class="drop" id="depthDrop" role="button" tabindex="0" aria-label="导入深度图"><strong>导入深度图（可选）</strong><span>白色靠近 · 黑色远离</span><input id="depthInput" type="file" accept="image/png,image/jpeg,image/webp"></div>
+      </section>
+      <section class="ai-depth" aria-labelledby="aiDepthTitle">
+        <div class="ai-depth-head"><strong id="aiDepthTitle">AI 单目深度</strong><span>Depth Anything V2 Small<br>图像仅在本机处理</span></div>
+        <button class="ai-button" id="aiDepthBtn" type="button" disabled>先导入原图</button>
+        <div class="ai-progress" id="aiProgress" hidden>
+          <div class="ai-track" role="progressbar" id="aiProgressBar" aria-label="AI 深度生成进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="ai-fill" id="aiProgressFill"></div></div>
+          <div class="ai-progress-row"><span id="aiProgressText">准备模型</span><span id="aiProgressPct">0%</span></div>
+        </div>
+      </section>
+      <section class="section">
+        <div class="section-head"><h3>预览通道</h3></div>
+        <div class="mode-row" id="viewModes">
+          <button class="mode" type="button" data-mode="0" aria-pressed="true">合成</button>
+          <button class="mode" type="button" data-mode="1" aria-pressed="false">深度</button>
+          <button class="mode" type="button" data-mode="2" aria-pressed="false">法线</button>
+        </div>
+        <div class="control"><div class="label-row"><span>视差强度</span><output id="depthScaleOut">4.0%</output></div><input id="depthScale" type="range" min="0" max="12" step="0.1" value="4"></div>
+        <div class="control"><div class="label-row"><span>深度对比</span><output id="contrastOut">1.20</output></div><input id="contrast" type="range" min="0.4" max="3" step="0.05" value="1.2"></div>
+        <div class="control"><div class="label-row"><span>表面起伏</span><output id="normalOut">2.4×</output></div><input id="normalStrength" type="range" min="0" max="8" step="0.1" value="2.4"></div>
+        <div class="check"><span>反转深度</span><button class="switch" id="invertSwitch" type="button" role="switch" aria-checked="false" aria-label="反转深度"></button></div>
+        <div class="check"><span>自动呼吸镜头</span><button class="switch on" id="autoSwitch" type="button" role="switch" aria-checked="true" aria-label="自动呼吸镜头"></button></div>
+      </section>
+      <section class="section">
+        <div class="section-head"><h3>深度画笔</h3><output id="brushStatus">关闭</output></div>
+        <div class="paint-tools">
+          <button class="mode" id="paintNear" type="button" aria-pressed="false">涂近</button>
+          <button class="mode" id="paintFar" type="button" aria-pressed="false">涂远</button>
+        </div>
+        <div class="control"><div class="label-row"><span>画笔尺寸</span><output id="brushOut">56 px</output></div><input id="brushSize" type="range" min="10" max="180" step="2" value="56"></div>
+        <button class="add-light" id="regenDepth" type="button">按亮度重新生成深度</button>
+      </section>
+    </aside>
+
+    <section class="stage-panel" aria-label="实时伪三维预览">
+      <div class="stagebar">
+        <div class="stagebar-left"><span class="status-dot"></span><span class="status-text" id="stageStatus">GPU 渲染管线</span></div>
+        <div class="stagebar-right">
+          <button class="iconbtn active" id="pointerMode" type="button" title="拖动镜头" aria-label="拖动镜头">
+            <svg viewBox="0 0 24 24"><path d="m8 3 9 8-4 1 2.5 5.5-2.7 1.2-2.4-5.5L7 16z"/></svg>
+          </button>
+          <button class="iconbtn" id="centerView" type="button" title="镜头归中" aria-label="镜头归中">
+            <svg viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M8 21H3v-5m13 5h5v-5"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="canvas-wrap" id="canvasWrap">
+        <canvas id="glcanvas"></canvas>
+        <div class="light-marker" id="lightMarker"></div>
+        <div class="canvas-hud"><span class="hud-chip" id="resChip">DEMO · 1200×900</span><span class="hud-chip" id="fpsChip">60 FPS</span></div>
+        <div class="tip" id="canvasTip">拖动改变视角 · 双击放置选中灯光</div>
+      </div>
+      <div class="unsupported" id="unsupported"><div><h2>当前环境不支持 WebGL</h2><p>请在启用硬件加速的现代浏览器中打开，即可使用实时视差与光照。</p></div></div>
+    </section>
+
+    <aside class="panel right">
+      <div class="panel-title"><h2>灯光工作台</h2><span class="step">02 / 03</span></div>
+      <section class="section">
+        <div class="section-head"><h3>场景灯光</h3><output id="lightCount">2 / 3</output></div>
+        <div class="lights" id="lightList"></div>
+        <button class="add-light" id="addLight" type="button">＋ 添加灯光</button>
+      </section>
+      <section class="section" id="lightEditor">
+        <div class="section-head"><h3>选中灯光</h3><output id="selectedLightName">灯光 1</output></div>
+        <div class="dual">
+          <div><div class="label-row"><span>颜色</span></div><input type="color" id="lightColor" value="#ff955d" aria-label="灯光颜色"></div>
+          <div><div class="label-row"><span>混合</span></div><select id="blendMode" class="mode" style="width:100%;height:31px;padding:2px 5px"><option value="0">柔光</option><option value="1">加色</option></select></div>
+        </div>
+        <div class="control"><div class="label-row"><span>亮度</span><output id="intensityOut">1.10</output></div><input id="lightIntensity" type="range" min="0" max="2.5" step="0.05" value="1.1"></div>
+        <div class="control"><div class="label-row"><span>范围</span><output id="radiusOut">48%</output></div><input id="lightRadius" type="range" min="10" max="100" step="1" value="48"></div>
+        <div class="control"><div class="label-row"><span>环境光</span><output id="ambientOut">72%</output></div><input id="ambient" type="range" min="15" max="120" step="1" value="72"></div>
+        <p class="mini">双击画面可移动选中灯光；灯光与表面法线实时计算。</p>
+      </section>
+      <section class="section">
+        <details class="tech" open>
+          <summary>技术路线</summary>
+          <p>可用 Depth Anything V2 Small 在本机估算单目深度，也可上传、按亮度生成或用画笔修改深度图。随后偏移纹理坐标形成视差，以深度梯度估算法线并叠加可移动点光源。</p>
+          <p><a href="https://en.wikipedia.org/wiki/Parallax_mapping" target="_blank" rel="noreferrer">视差映射原理 ↗</a><br><a href="https://dev.to/martindelophy/depth-assisted-video-relighting-in-the-browser-with-webgpu-and-webgl-2nl3" target="_blank" rel="noreferrer">浏览器深度重光照参考 ↗</a><br><a href="https://x.com/de_nier_ai/status/2107282935904944444" target="_blank" rel="noreferrer">原始灵感帖 ↗</a></p>
+        </details>
+      </section>
+    </aside>
+  </div>
+</main>
+<div class="notice" id="notice" role="status"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.all.min.js" crossorigin="anonymous"></script>
+<script>
+(function(){
+  'use strict';
+  const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+  const canvas=$('#glcanvas'), wrap=$('#canvasWrap');
+  const gl=canvas.getContext('webgl',{preserveDrawingBuffer:true,alpha:false,antialias:true})||canvas.getContext('experimental-webgl',{preserveDrawingBuffer:true});
+  if(!gl){$('#unsupported').classList.add('show');return;}
+
+  const vs=`attribute vec2 aPos; varying vec2 vUv; void main(){vUv=aPos*.5+.5;gl_Position=vec4(aPos,0.,1.);}`;
+  const fs=`precision highp float;
+    varying vec2 vUv; uniform sampler2D uImage,uDepth; uniform vec2 uView,uTexel; uniform float uScale,uContrast,uNormalStrength,uInvert,uAmbient,uTime; uniform int uMode;
+    uniform vec3 uLightPos[3]; uniform vec3 uLightColor[3]; uniform float uLightPower[3]; uniform float uLightRadius[3]; uniform float uLightEnabled[3]; uniform float uBlend;
+    float depthAt(vec2 uv){float d=texture2D(uDepth,clamp(uv,0.,1.)).r;d=mix(d,1.-d,uInvert);return clamp((d-.5)*uContrast+.5,0.,1.);}
+    void main(){
+      vec2 base=mix(vec2(.035),vec2(.965),vUv);
+      float d0=depthAt(base);
+      vec2 uv=base-uView*uScale*(d0-.28);
+      float d=depthAt(uv);
+      uv=base-uView*uScale*(d-.28);
+      uv=clamp(uv,.002,.998);
+      d=depthAt(uv);
+      float dx=depthAt(uv+vec2(uTexel.x,0.))-depthAt(uv-vec2(uTexel.x,0.));
+      float dy=depthAt(uv+vec2(0.,uTexel.y))-depthAt(uv-vec2(0.,uTexel.y));
+      vec3 n=normalize(vec3(-dx*uNormalStrength/uTexel.x*.006,-dy*uNormalStrength/uTexel.y*.006,1.));
+      if(uMode==1){gl_FragColor=vec4(vec3(d),1.);return;}
+      if(uMode==2){gl_FragColor=vec4(n*.5+.5,1.);return;}
+      vec3 baseColor=texture2D(uImage,uv).rgb;
+      vec3 lit=baseColor*uAmbient;
+      for(int i=0;i<3;i++){
+        vec3 surface=vec3(vUv,d*.18);
+        vec3 delta=uLightPos[i]-surface;
+        float dist=length(delta.xy);
+        float fall=pow(clamp(1.-dist/max(uLightRadius[i],.01),0.,1.),1.7);
+        float ndl=max(dot(n,normalize(delta)),0.);
+        float amount=(.16+ndl*.84)*fall*uLightPower[i]*uLightEnabled[i];
+        if(uBlend<.5) lit+=baseColor*uLightColor[i]*amount*.72; else lit+=uLightColor[i]*amount*.62;
+      }
+      float vignette=smoothstep(1.12,.28,length(vUv-.5));
+      lit*=mix(.93,1.,vignette);
+      gl_FragColor=vec4(pow(clamp(lit,0.,1.),vec3(.98)),1.);
+    }`;
+  function shader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s}
+  const program=gl.createProgram();gl.attachShader(program,shader(gl.VERTEX_SHADER,vs));gl.attachShader(program,shader(gl.FRAGMENT_SHADER,fs));gl.linkProgram(program);gl.useProgram(program);
+  const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
+  const pos=gl.getAttribLocation(program,'aPos');gl.enableVertexAttribArray(pos);gl.vertexAttribPointer(pos,2,gl.FLOAT,false,0,0);
+  const U={};['uImage','uDepth','uView','uTexel','uScale','uContrast','uNormalStrength','uInvert','uAmbient','uTime','uMode','uLightPos','uLightColor','uLightPower','uLightRadius','uLightEnabled','uBlend'].forEach(n=>U[n]=gl.getUniformLocation(program,n));
+
+  function makeTexture(unit){const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,t);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);return t}
+  const imageTex=makeTexture(0),depthTex=makeTexture(1);gl.uniform1i(U.uImage,0);gl.uniform1i(U.uDepth,1);
+  let sourceCanvas=document.createElement('canvas'),depthCanvas=document.createElement('canvas'),sourceW=1200,sourceH=900;
+  let mode=0,invert=false,auto=true,paintMode=0,dragging=false,lastPointer=null,hasUserImage=false;
+  let targetView={x:0,y:0},view={x:0,y:0},frames=0,lastFps=performance.now();
+  let aiSession=null,aiBusy=false;
+  const AI_MODEL_URL='https://huggingface.co/onnx-community/depth-anything-v2-small/resolve/main/onnx/model.onnx';
+  const ORT_WASM_PATH='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
+  let lights=[
+    {name:'暖色主灯',x:.28,y:.28,z:.62,color:'#ff955d',power:1.1,radius:.48,on:1},
+    {name:'冷色轮廓',x:.76,y:.62,z:.5,color:'#62a8ff',power:.72,radius:.42,on:1}
+  ],selected=0;
+
+  function drawDemo(){
+    sourceCanvas.width=sourceW;sourceCanvas.height=sourceH;const c=sourceCanvas.getContext('2d');
+    const bg=c.createLinearGradient(0,0,1200,900);bg.addColorStop(0,'#222f30');bg.addColorStop(.52,'#162322');bg.addColorStop(1,'#0a1112');c.fillStyle=bg;c.fillRect(0,0,1200,900);
+    c.fillStyle='#dddfcc';c.fillRect(0,650,1200,250);
+    c.fillStyle='#8eb59f';c.beginPath();c.moveTo(0,610);c.bezierCurveTo(280,520,430,620,660,505);c.bezierCurveTo(850,410,1010,520,1200,410);c.lineTo(1200,700);c.lineTo(0,700);c.closePath();c.fill();
+    c.fillStyle='#ecb04e';c.beginPath();c.arc(875,212,118,0,Math.PI*2);c.fill();
+    c.fillStyle='#e96844';c.beginPath();c.ellipse(430,565,194,150,-.16,0,Math.PI*2);c.fill();
+    c.fillStyle='#f3e6d3';c.beginPath();c.ellipse(420,548,122,95,-.16,0,Math.PI*2);c.fill();
+    c.fillStyle='#1b2825';c.fillRect(390,475,56,190);c.beginPath();c.ellipse(418,464,79,38,0,0,Math.PI*2);c.fill();
+    c.fillStyle='#32504a';c.beginPath();c.moveTo(480,365);c.quadraticCurveTo(560,245,630,360);c.quadraticCurveTo(555,430,480,365);c.fill();
+    c.beginPath();c.moveTo(435,372);c.quadraticCurveTo(355,245,295,368);c.quadraticCurveTo(365,438,435,372);c.fill();
+    c.strokeStyle='#27413c';c.lineWidth=20;c.lineCap='round';c.beginPath();c.moveTo(417,480);c.quadraticCurveTo(430,390,480,338);c.moveTo(413,470);c.quadraticCurveTo(397,395,350,338);c.stroke();
+    c.fillStyle='rgba(255,255,255,.12)';c.beginPath();c.ellipse(335,520,46,31,-.2,0,Math.PI*2);c.fill();
+    c.fillStyle='#14211f';c.fillRect(0,800,1200,100);
+    generateDepth(true);
+  }
+  function generateDepth(isDemo){
+    depthCanvas.width=sourceW;depthCanvas.height=sourceH;const d=depthCanvas.getContext('2d',{willReadFrequently:true});
+    if(isDemo){
+      const g=d.createLinearGradient(0,0,0,900);g.addColorStop(0,'#252525');g.addColorStop(1,'#b9b9b9');d.fillStyle=g;d.fillRect(0,0,1200,900);
+      d.fillStyle='#8b8b8b';d.beginPath();d.moveTo(0,610);d.bezierCurveTo(280,520,430,620,660,505);d.bezierCurveTo(850,410,1010,520,1200,410);d.lineTo(1200,700);d.lineTo(0,700);d.closePath();d.fill();
+      d.fillStyle='#6d6d6d';d.beginPath();d.arc(875,212,118,0,Math.PI*2);d.fill();
+      d.fillStyle='#ededed';d.beginPath();d.ellipse(430,565,194,150,-.16,0,Math.PI*2);d.fill();
+      d.fillStyle='#f7f7f7';d.fillRect(390,450,56,220);d.beginPath();d.ellipse(418,464,79,38,0,0,Math.PI*2);d.fill();
+      d.fillStyle='#dadada';d.beginPath();d.moveTo(480,365);d.quadraticCurveTo(560,245,630,360);d.quadraticCurveTo(555,430,480,365);d.fill();d.beginPath();d.moveTo(435,372);d.quadraticCurveTo(355,245,295,368);d.quadraticCurveTo(365,438,435,372);d.fill();
+      d.filter='blur(8px)';d.drawImage(depthCanvas,0,0);d.filter='none';
+    }else{
+      d.drawImage(sourceCanvas,0,0);let im=d.getImageData(0,0,sourceW,sourceH),p=im.data;
+      for(let i=0;i<p.length;i+=4){let y=(p[i]*.2126+p[i+1]*.7152+p[i+2]*.0722);let row=Math.floor(i/4/sourceW)/sourceH;let v=Math.max(0,Math.min(255,y*.72+row*72));p[i]=p[i+1]=p[i+2]=v;p[i+3]=255}d.putImageData(im,0,0);d.filter='blur(10px)';d.drawImage(depthCanvas,0,0);d.filter='none';
+    }
+    uploadTexture(depthTex,depthCanvas,1);notify(isDemo?'已恢复示例深度':'已生成亮度深度，可用画笔修正');
+  }
+  function setAIProgress(value,text){
+    const n=Math.max(0,Math.min(100,Math.round(value)));$('#aiProgress').hidden=false;$('#aiProgressFill').style.width=n+'%';$('#aiProgressPct').textContent=n+'%';$('#aiProgressText').textContent=text;$('#aiProgressBar').setAttribute('aria-valuenow',String(n));
+  }
+  async function fetchModelBytes(){
+    let response=null,fromCache=false,cache=null;
+    if('caches' in window){try{cache=await caches.open('depth-anything-v2-small-v1');response=await cache.match(AI_MODEL_URL);fromCache=!!response}catch(e){cache=null}}
+    if(!response){response=await fetch(AI_MODEL_URL,{mode:'cors',cache:'force-cache'});if(!response.ok)throw new Error('model-download-'+response.status)}
+    const total=+(response.headers.get('content-length')||0),reader=response.body&&response.body.getReader();
+    if(!reader){const buffer=await response.arrayBuffer();setAIProgress(78,fromCache?'已读取本地模型':'模型下载完成');return buffer}
+    const chunks=[];let loaded=0;
+    while(true){const part=await reader.read();if(part.done)break;chunks.push(part.value);loaded+=part.value.byteLength;const ratio=total?loaded/total:Math.min(.94,loaded/95000000);setAIProgress(5+ratio*73,(fromCache?'读取本地模型 ':'下载 AI 模型 ')+(loaded/1048576).toFixed(1)+' MB')}
+    const merged=new Uint8Array(loaded);let offset=0;chunks.forEach(chunk=>{merged.set(chunk,offset);offset+=chunk.byteLength});
+    if(cache&&!fromCache){try{await cache.put(AI_MODEL_URL,new Response(merged,{headers:{'Content-Type':'application/octet-stream','Content-Length':String(loaded)}}))}catch(e){}}
+    setAIProgress(78,fromCache?'本地模型已就绪':'模型下载完成');return merged.buffer;
+  }
+  async function ensureAISession(){
+    if(aiSession)return aiSession;
+    if(!window.ort)throw new Error('runtime-unavailable');
+    ort.env.wasm.wasmPaths=ORT_WASM_PATH;ort.env.wasm.numThreads=1;
+    const model=await fetchModelBytes();setAIProgress(82,'初始化推理引擎');
+    if(navigator.gpu){try{aiSession=await ort.InferenceSession.create(model,{executionProviders:['webgpu'],graphOptimizationLevel:'all'});aiSession.providerLabel='WebGPU';return aiSession}catch(e){setAIProgress(84,'WebGPU 不可用，切换 WASM')}}
+    aiSession=await ort.InferenceSession.create(model,{executionProviders:['wasm'],graphOptimizationLevel:'all'});aiSession.providerLabel='WASM';return aiSession;
+  }
+  async function generateAIDepth(){
+    if(aiBusy||!hasUserImage)return;
+    aiBusy=true;const btn=$('#aiDepthBtn');btn.disabled=true;btn.textContent='正在生成…';setAIProgress(1,'检查运行环境');
+    try{
+      const session=await ensureAISession(),size=518,prep=document.createElement('canvas');prep.width=size;prep.height=size;const pc=prep.getContext('2d',{willReadFrequently:true});pc.drawImage(sourceCanvas,0,0,size,size);const pixels=pc.getImageData(0,0,size,size).data,data=new Float32Array(3*size*size),mean=[.485,.456,.406],std=[.229,.224,.225];
+      setAIProgress(88,'准备图像');for(let i=0;i<size*size;i++){data[i]=(pixels[i*4]/255-mean[0])/std[0];data[size*size+i]=(pixels[i*4+1]/255-mean[1])/std[1];data[size*size*2+i]=(pixels[i*4+2]/255-mean[2])/std[2]}
+      setAIProgress(91,'AI 正在估算空间层次');const inputName=session.inputNames[0],feeds={};feeds[inputName]=new ort.Tensor('float32',data,[1,3,size,size]);const outputs=await session.run(feeds),result=outputs[session.outputNames[0]],values=result.data,dims=result.dims,outW=dims[dims.length-1],outH=dims[dims.length-2];
+      let min=Infinity,max=-Infinity;for(let i=0;i<values.length;i++){const v=values[i];if(Number.isFinite(v)){if(v<min)min=v;if(v>max)max=v}}if(!Number.isFinite(min)||max<=min)throw new Error('invalid-depth');
+      const map=document.createElement('canvas');map.width=outW;map.height=outH;const mc=map.getContext('2d'),image=mc.createImageData(outW,outH),range=max-min;for(let i=0;i<outW*outH;i++){const v=Math.max(0,Math.min(255,Math.round((values[i]-min)/range*255)));image.data[i*4]=image.data[i*4+1]=image.data[i*4+2]=v;image.data[i*4+3]=255}mc.putImageData(image,0,0);
+      depthCanvas.width=sourceW;depthCanvas.height=sourceH;const dc=depthCanvas.getContext('2d');dc.imageSmoothingEnabled=true;dc.imageSmoothingQuality='high';dc.drawImage(map,0,0,sourceW,sourceH);uploadTexture(depthTex,depthCanvas,1);setAIProgress(100,'AI 深度已生成 · '+session.providerLabel);$('#stageStatus').textContent='AI 深度 · '+session.providerLabel;notify('AI 深度已生成，可继续用画笔修正');setTimeout(()=>{$('#aiProgress').hidden=true},1600);
+    }catch(err){console.error('AI depth generation failed',err);setAIProgress(0,'生成失败，已保留亮度深度');const message=err&&err.message==='runtime-unavailable'?'AI 组件加载失败，请检查网络后重试':'AI 深度生成失败，请检查网络或改用亮度深度';notify(message)}finally{aiBusy=false;btn.disabled=!hasUserImage;btn.textContent='AI 生成深度'}
+  }
+  function uploadTexture(tex,src,unit){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,tex);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,src)}
+  function setSource(img,name){
+    const max=1800,scale=Math.min(1,max/Math.max(img.naturalWidth||img.width,img.naturalHeight||img.height));sourceW=Math.max(2,Math.round((img.naturalWidth||img.width)*scale));sourceH=Math.max(2,Math.round((img.naturalHeight||img.height)*scale));sourceCanvas.width=sourceW;sourceCanvas.height=sourceH;sourceCanvas.getContext('2d').drawImage(img,0,0,sourceW,sourceH);wrap.style.setProperty('--art-aspect',sourceW+' / '+sourceH);uploadTexture(imageTex,sourceCanvas,0);generateDepth(false);resize();hasUserImage=true;$('#aiDepthBtn').disabled=false;$('#aiDepthBtn').textContent='AI 生成深度';$('#resChip').textContent=(name||'IMAGE').toUpperCase().slice(0,16)+' · '+sourceW+'×'+sourceH;$('#stageStatus').textContent='已载入图像 · 亮度深度';
+  }
+  function readFile(file,cb){if(!file)return;if(!/^image\/(png|jpeg|webp)$/.test(file.type)){notify('请选择 PNG、JPG 或 WEBP 图片');return}const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>cb(img,file.name);img.onerror=()=>notify('图片无法读取');img.src=r.result};r.readAsDataURL(file)}
+  function loadDepth(img,name){const t=document.createElement('canvas');t.width=sourceW;t.height=sourceH;const c=t.getContext('2d');c.drawImage(img,0,0,sourceW,sourceH);let im=c.getImageData(0,0,sourceW,sourceH),p=im.data;for(let i=0;i<p.length;i+=4){let y=p[i]*.2126+p[i+1]*.7152+p[i+2]*.0722;p[i]=p[i+1]=p[i+2]=y;p[i+3]=255}c.putImageData(im,0,0);depthCanvas=t;uploadTexture(depthTex,depthCanvas,1);notify('已载入深度图：'+name)}
+
+  function resize(){const r=wrap.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);const w=Math.round(r.width*dpr),h=Math.round(r.height*dpr);if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h)}}
+  function hexRgb(h){return[parseInt(h.slice(1,3),16)/255,parseInt(h.slice(3,5),16)/255,parseInt(h.slice(5,7),16)/255]}
+  function render(t){
+    resize();if(auto&&!dragging&&paintMode===0){targetView.x=Math.sin(t*.00038)*.34;targetView.y=Math.cos(t*.00031)*.2}view.x+=(targetView.x-view.x)*.065;view.y+=(targetView.y-view.y)*.065;
+    gl.uniform2f(U.uView,view.x,view.y);gl.uniform2f(U.uTexel,1/sourceW,1/sourceH);gl.uniform1f(U.uScale,+$('#depthScale').value/100);gl.uniform1f(U.uContrast,+$('#contrast').value);gl.uniform1f(U.uNormalStrength,+$('#normalStrength').value);gl.uniform1f(U.uInvert,invert?1:0);gl.uniform1f(U.uAmbient,+$('#ambient').value/100);gl.uniform1f(U.uTime,t/1000);gl.uniform1i(U.uMode,mode);gl.uniform1f(U.uBlend,+$('#blendMode').value);
+    const lp=[],lc=[],pw=[],ra=[],en=[];for(let i=0;i<3;i++){const l=lights[i]||{x:0,y:0,z:.5,color:'#ffffff',power:0,radius:.2,on:0};lp.push(l.x,1-l.y,l.z);lc.push(...hexRgb(l.color));pw.push(l.power);ra.push(l.radius);en.push(l.on)}
+    gl.uniform3fv(U.uLightPos,new Float32Array(lp));gl.uniform3fv(U.uLightColor,new Float32Array(lc));gl.uniform1fv(U.uLightPower,new Float32Array(pw));gl.uniform1fv(U.uLightRadius,new Float32Array(ra));gl.uniform1fv(U.uLightEnabled,new Float32Array(en));gl.drawArrays(gl.TRIANGLES,0,6);
+    frames++;if(t-lastFps>700){$('#fpsChip').textContent=Math.round(frames*1000/(t-lastFps))+' FPS';frames=0;lastFps=t}requestAnimationFrame(render)
+  }
+  function renderLights(){const list=$('#lightList');list.innerHTML='';lights.forEach((l,i)=>{const el=document.createElement('div');el.className='light-item'+(i===selected?' active':'');el.innerHTML='<span class="light-swatch" style="--swatch:'+l.color+'"></span><div><div class="light-name">'+l.name+'</div><div class="light-pos">X '+Math.round(l.x*100)+' · Y '+Math.round(l.y*100)+'</div></div><button class="light-toggle" type="button" aria-label="开关灯光">'+(l.on?'●':'○')+'</button>';el.addEventListener('click',e=>{if(e.target.closest('.light-toggle')){l.on=l.on?0:1;renderLights();return}selected=i;renderLights();syncEditor()});list.appendChild(el)});$('#lightCount').textContent=lights.length+' / 3';$('#addLight').disabled=lights.length>=3;updateMarker()}
+  function syncEditor(){const l=lights[selected];if(!l)return;$('#selectedLightName').textContent=l.name;$('#lightColor').value=l.color;$('#lightIntensity').value=l.power;$('#lightRadius').value=l.radius*100;$('#intensityOut').textContent=l.power.toFixed(2);$('#radiusOut').textContent=Math.round(l.radius*100)+'%';renderLights()}
+  function updateMarker(){const l=lights[selected],m=$('#lightMarker');if(!l){m.classList.remove('selected');return}m.style.left=(l.x*100)+'%';m.style.top=(l.y*100)+'%';m.style.setProperty('--marker',l.color);m.classList.add('selected')}
+  function notify(msg){const n=$('#notice');n.textContent=msg;n.classList.add('show');clearTimeout(notify.t);notify.t=setTimeout(()=>n.classList.remove('show'),1800)}
+  function switcher(el,state){el.classList.toggle('on',state);el.setAttribute('aria-checked',state?'true':'false')}
+  function setPaint(n){paintMode=paintMode===n?0:n;$('#paintNear').setAttribute('aria-pressed',paintMode===1);$('#paintFar').setAttribute('aria-pressed',paintMode===-1);$('#brushStatus').textContent=paintMode===1?'涂近':paintMode===-1?'涂远':'关闭';canvas.classList.toggle('painting',paintMode!==0);$('#pointerMode').classList.toggle('active',paintMode===0);$('#canvasTip').textContent=paintMode?'按住拖动绘制深度':'拖动改变视角 · 双击放置选中灯光'}
+  function paintAt(e){const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*sourceW,y=(e.clientY-r.top)/r.height*sourceH,size=+$('#brushSize').value*sourceW/900;const c=depthCanvas.getContext('2d');c.save();c.fillStyle=paintMode===1?'rgba(255,255,255,.14)':'rgba(0,0,0,.14)';c.beginPath();c.arc(x,y,size,0,Math.PI*2);c.fill();c.restore();uploadTexture(depthTex,depthCanvas,1)}
+
+  $('#imageInput').addEventListener('change',e=>readFile(e.target.files[0],setSource));$('#depthInput').addEventListener('change',e=>readFile(e.target.files[0],loadDepth));
+  ['imageDrop','depthDrop'].forEach((id,idx)=>{const el=$('#'+id),input=idx?$('#depthInput'):$('#imageInput');el.addEventListener('click',e=>{if(e.target!==input)input.click()});el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();input.click()}});el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('drag')});el.addEventListener('dragleave',()=>el.classList.remove('drag'));el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('drag');readFile(e.dataTransfer.files[0],idx?loadDepth:setSource)})});
+  $$('#viewModes .mode').forEach(b=>b.addEventListener('click',()=>{mode=+b.dataset.mode;$$('#viewModes .mode').forEach(x=>x.setAttribute('aria-pressed',x===b))}));
+  function bindRange(id,out,fmt){$(id).addEventListener('input',e=>$(out).textContent=fmt(+e.target.value))}
+  bindRange('#depthScale','#depthScaleOut',v=>v.toFixed(1)+'%');bindRange('#contrast','#contrastOut',v=>v.toFixed(2));bindRange('#normalStrength','#normalOut',v=>v.toFixed(1)+'×');bindRange('#brushSize','#brushOut',v=>v+' px');bindRange('#ambient','#ambientOut',v=>v+'%');
+  $('#invertSwitch').addEventListener('click',()=>{invert=!invert;switcher($('#invertSwitch'),invert)});$('#autoSwitch').addEventListener('click',()=>{auto=!auto;switcher($('#autoSwitch'),auto)});
+  $('#paintNear').addEventListener('click',()=>setPaint(1));$('#paintFar').addEventListener('click',()=>setPaint(-1));$('#pointerMode').addEventListener('click',()=>setPaint(0));$('#regenDepth').addEventListener('click',()=>generateDepth(false));$('#aiDepthBtn').addEventListener('click',generateAIDepth);
+  $('#centerView').addEventListener('click',()=>{auto=false;switcher($('#autoSwitch'),false);targetView={x:0,y:0}});
+  canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);dragging=true;lastPointer={x:e.clientX,y:e.clientY};if(paintMode)paintAt(e);else canvas.classList.add('dragging')});
+  canvas.addEventListener('pointermove',e=>{if(!dragging)return;if(paintMode){paintAt(e);return}auto=false;switcher($('#autoSwitch'),false);const r=canvas.getBoundingClientRect();targetView.x=Math.max(-1,Math.min(1,targetView.x+(e.clientX-lastPointer.x)/r.width*2));targetView.y=Math.max(-1,Math.min(1,targetView.y-(e.clientY-lastPointer.y)/r.height*2));lastPointer={x:e.clientX,y:e.clientY}});
+  function endDrag(){dragging=false;canvas.classList.remove('dragging')}canvas.addEventListener('pointerup',endDrag);canvas.addEventListener('pointercancel',endDrag);
+  canvas.addEventListener('dblclick',e=>{if(paintMode||!lights[selected])return;const r=canvas.getBoundingClientRect();lights[selected].x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));lights[selected].y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));renderLights();syncEditor()});
+  $('#addLight').addEventListener('click',()=>{if(lights.length>=3){notify('最多支持 3 盏实时灯光');return}lights.push({name:'灯光 '+(lights.length+1),x:.5,y:.42,z:.55,color:'#b3ff9e',power:.8,radius:.38,on:1});selected=lights.length-1;renderLights();syncEditor()});
+  $('#lightColor').addEventListener('input',e=>{lights[selected].color=e.target.value;renderLights()});$('#lightIntensity').addEventListener('input',e=>{lights[selected].power=+e.target.value;$('#intensityOut').textContent=(+e.target.value).toFixed(2)});$('#lightRadius').addEventListener('input',e=>{lights[selected].radius=+e.target.value/100;$('#radiusOut').textContent=e.target.value+'%'});
+  $('#blendMode').addEventListener('change',()=>{});
+  $('#resetBtn').addEventListener('click',()=>{drawDemo();uploadTexture(imageTex,sourceCanvas,0);invert=false;auto=true;mode=0;paintMode=0;hasUserImage=false;$('#aiDepthBtn').disabled=true;$('#aiDepthBtn').textContent='先导入原图';$('#aiProgress').hidden=true;targetView={x:0,y:0};view={x:0,y:0};lights=[{name:'暖色主灯',x:.28,y:.28,z:.62,color:'#ff955d',power:1.1,radius:.48,on:1},{name:'冷色轮廓',x:.76,y:.62,z:.5,color:'#62a8ff',power:.72,radius:.42,on:1}];selected=0;$('#depthScale').value=4;$('#contrast').value=1.2;$('#normalStrength').value=2.4;$('#ambient').value=72;$('#blendMode').value=0;$('#depthScaleOut').textContent='4.0%';$('#contrastOut').textContent='1.20';$('#normalOut').textContent='2.4×';$('#ambientOut').textContent='72%';switcher($('#invertSwitch'),false);switcher($('#autoSwitch'),true);setPaint(0);$$('#viewModes .mode').forEach((x,i)=>x.setAttribute('aria-pressed',i===0));$('#resChip').textContent='DEMO · 1200×900';$('#stageStatus').textContent='GPU 渲染管线';renderLights();syncEditor();notify('已恢复初始场景')});
+  $('#exportBtn').addEventListener('click',()=>{requestAnimationFrame(()=>{canvas.toBlob(blob=>{if(!blob){notify('导出失败');return}const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='pseudo-3d-'+Date.now()+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);notify('PNG 已导出')},'image/png')})});
+  window.addEventListener('resize',resize);
+  drawDemo();uploadTexture(imageTex,sourceCanvas,0);renderLights();syncEditor();requestAnimationFrame(render);
+})();
+</script>
+</body>
+</html>
