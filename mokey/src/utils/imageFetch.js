@@ -31,6 +31,9 @@ function loadViaGM(url) {
       url,
       responseType: 'arraybuffer',
       timeout: 30000,
+      // 很多图床（如 pixiv 的 i.pximg.net）有防盗链：无 Referer 直接 403。
+      // 带上页面来源，模拟浏览器 <img> 的正常请求
+      headers: { Referer: location.origin + '/' },
       onload(res) {
         if (res.status < 200 || res.status >= 300) {
           reject(new Error('服务器返回 HTTP ' + res.status + '（可能防盗链或需登录）'));
