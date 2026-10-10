@@ -145,6 +145,15 @@
         <div class="control"><div class="label-row"><span>视差强度</span><output id="depthScaleOut">4.0%</output></div><input id="depthScale" type="range" min="0" max="12" step="0.1" value="4"></div>
         <div class="control"><div class="label-row"><span>深度对比</span><output id="contrastOut">1.20</output></div><input id="contrast" type="range" min="0.4" max="3" step="0.05" value="1.2"></div>
         <div class="control"><div class="label-row"><span>表面起伏</span><output id="normalOut">2.4×</output></div><input id="normalStrength" type="range" min="0" max="8" step="0.1" value="2.4"></div>
+        <div class="control"><div class="label-row"><span>法线平滑</span><output id="normalSmoothOut">1.0</output></div><input id="normalSmooth" type="range" min="0" max="4" step="0.1" value="1"></div>
+        <div class="control"><div class="label-row"><span>表面细节</span><output id="detailOut">25%</output></div><input id="detailStrength" type="range" min="0" max="100" step="1" value="25"></div>
+        <div class="control"><div class="label-row"><span>材质球</span><output id="matcapOut">无</output></div>
+          <div class="presets" id="matcapPresets">
+            <button class="preset" type="button" data-matcap="none">无</button><button class="preset" type="button" data-matcap="clay">黏土</button><button class="preset" type="button" data-matcap="skin">蜜桃</button><button class="preset" type="button" data-matcap="metal">曜石</button><button class="preset" type="button" id="matcapUploadBtn">上传…</button>
+          </div>
+          <input id="matcapInput" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+        </div>
+        <div class="control"><div class="label-row"><span>材质球强度</span><output id="matcapMixOut">0%</output></div><input id="matcapMix" type="range" min="0" max="100" step="1" value="0"></div>
         <div class="check"><span>反转深度</span><button class="switch" id="invertSwitch" type="button" role="switch" aria-checked="false" aria-label="反转深度"></button></div>
         <div class="check"><span>自动呼吸镜头</span><button class="switch on" id="autoSwitch" type="button" role="switch" aria-checked="true" aria-label="自动呼吸镜头"></button></div>
       </section>
@@ -239,16 +248,24 @@
 
   const vs=`attribute vec2 aPos; varying vec2 vUv; void main(){vUv=aPos*.5+.5;gl_Position=vec4(aPos,0.,1.);}`;
   const fs=`precision highp float;
-    varying vec2 vUv; uniform sampler2D uImage,uDepth; uniform vec2 uView,uTexel; uniform float uScale,uContrast,uNormalStrength,uInvert,uAmbient,uTime,uSplit,uExposure,uRim,uCel; uniform int uMode;
+    varying vec2 vUv; uniform sampler2D uImage,uDepth,uDetail,uMatcap;
+    uniform float uNormalSmooth,uDetailStrength,uMatcapMix; uniform vec2 uView,uTexel; uniform float uScale,uContrast,uNormalStrength,uInvert,uAmbient,uTime,uSplit,uExposure,uRim,uCel; uniform int uMode;
     uniform vec3 uAmbientColor; uniform vec3 uLightPos[8]; uniform vec3 uLightColor[8]; uniform float uLightPower[8]; uniform float uLightRadius[8]; uniform float uLightEnabled[8]; uniform float uBlend;
     float depthAt(vec2 uv){float d=texture2D(uDepth,clamp(uv,0.,1.)).r;d=mix(d,1.-d,uInvert);return clamp((d-.5)*uContrast+.5,0.,1.);}
     void main(){
       vec2 base=mix(vec2(.035),vec2(.965),vUv);
       float d0=depthAt(base); vec2 uv=base-uView*uScale*(d0-.28); float d=depthAt(uv);
       uv=clamp(base-uView*uScale*(d-.28),.002,.998); d=depthAt(uv);
-      float dx=depthAt(uv+vec2(uTexel.x,0.))-depthAt(uv-vec2(uTexel.x,0.));
-      float dy=depthAt(uv+vec2(0.,uTexel.y))-depthAt(uv-vec2(0.,uTexel.y));
-      vec3 n=normalize(vec3(-dx*uNormalStrength/uTexel.x*.006,-dy*uNormalStrength/uTexel.y*.006,1.));
+      vec2 npx=uTexel*(1.+uNormalSmooth*2.);
+      float ntl=depthAt(uv+vec2(-npx.x,-npx.y)),ntc=depthAt(uv+vec2(0.,-npx.y)),ntr=depthAt(uv+vec2(npx.x,-npx.y));
+      float nml=depthAt(uv+vec2(-npx.x,0.)),nmr=depthAt(uv+vec2(npx.x,0.));
+      float nbl=depthAt(uv+vec2(-npx.x,npx.y)),nbc=depthAt(uv+vec2(0.,npx.y)),nbr=depthAt(uv+vec2(npx.x,npx.y));
+      float dx=(ntr+2.*nmr+nbr)-(ntl+2.*nml+nbl);
+      float dy=(nbl+2.*nbc+nbr)-(ntl+2.*ntc+ntr);
+      float nrm=1.+uNormalSmooth*2.;
+      vec3 n=normalize(vec3(-dx*uNormalStrength*.0015/(uTexel.x*nrm),-dy*uNormalStrength*.0015/(uTexel.y*nrm),1.));
+      vec3 dtn=texture2D(uDetail,vUv*vec2(6.,6.*uTexel.y/uTexel.x)).rgb*2.-1.;
+      n=normalize(n+vec3(dtn.xy*uDetailStrength,0.));
       if(uMode==1){gl_FragColor=vec4(vec3(d),1.);return;} if(uMode==2){gl_FragColor=vec4(n*.5+.5,1.);return;}
       vec3 original=texture2D(uImage,vUv).rgb; if(uMode==3){gl_FragColor=vec4(original,1.);return;}
       vec3 baseColor=uMode==4?vec3(1.):texture2D(uImage,uv).rgb; vec3 lit=baseColor*uAmbient*uAmbientColor; float maxNdl=0.;
@@ -259,6 +276,8 @@
         float amount=(.16+ndl*.84)*fall*uLightPower[i]*uLightEnabled[i];
         if(uBlend<.5) lit+=baseColor*uLightColor[i]*amount*.72; else lit+=uLightColor[i]*amount*.62;
       }
+      vec3 mcs=texture2D(uMatcap,clamp(n.xy*.5+.5,vec2(0.),vec2(1.))).rgb;
+      lit=mix(lit,baseColor*mcs*1.35,uMatcapMix);
       lit+=vec3(1.)*pow(1.-maxNdl,2.5)*uRim*.6; float vignette=smoothstep(1.12,.28,length(vUv-.5)); lit*=mix(.93,1.,vignette); lit*=uExposure;
       vec3 composite=pow(clamp(lit,0.,1.),vec3(.98)); if(uMode==5&&vUv.x<uSplit) composite=original;
       gl_FragColor=vec4(composite,1.);
@@ -267,10 +286,59 @@
   const program=gl.createProgram();gl.attachShader(program,shader(gl.VERTEX_SHADER,vs));gl.attachShader(program,shader(gl.FRAGMENT_SHADER,fs));gl.linkProgram(program);gl.useProgram(program);
   const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
   const pos=gl.getAttribLocation(program,'aPos');gl.enableVertexAttribArray(pos);gl.vertexAttribPointer(pos,2,gl.FLOAT,false,0,0);
-  const U={};['uImage','uDepth','uView','uTexel','uScale','uContrast','uNormalStrength','uInvert','uAmbient','uAmbientColor','uExposure','uRim','uCel','uSplit','uTime','uMode','uLightPos','uLightColor','uLightPower','uLightRadius','uLightEnabled','uBlend'].forEach(n=>U[n]=gl.getUniformLocation(program,n));
+  const U={};['uImage','uDepth','uDetail','uMatcap','uView','uTexel','uScale','uContrast','uNormalStrength','uNormalSmooth','uDetailStrength','uMatcapMix','uInvert','uAmbient','uAmbientColor','uExposure','uRim','uCel','uSplit','uTime','uMode','uLightPos','uLightColor','uLightPower','uLightRadius','uLightEnabled','uBlend'].forEach(n=>U[n]=gl.getUniformLocation(program,n));
 
   function makeTexture(unit){const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,t);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);return t}
-  const imageTex=makeTexture(0),depthTex=makeTexture(1);gl.uniform1i(U.uImage,0);gl.uniform1i(U.uDepth,1);
+  const imageTex=makeTexture(0),depthTex=makeTexture(1),detailTex=makeTexture(3),matcapTex=makeTexture(4);
+  gl.uniform1i(U.uImage,0);gl.uniform1i(U.uDepth,1);gl.uniform1i(U.uDetail,3);gl.uniform1i(U.uMatcap,4);
+  gl.activeTexture(gl.TEXTURE0+3);gl.bindTexture(gl.TEXTURE_2D,detailTex);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);
+  function canvasTexture(cv,unit){gl.activeTexture(gl.TEXTURE0+unit);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,cv)}
+  function makeDetailCanvas(){
+    const S=256,cv=document.createElement('canvas');cv.width=cv.height=S;const ctx=cv.getContext('2d'),img=ctx.createImageData(S,S),G=32,grid=new Float32Array((G+1)*(G+1));
+    for(let i=0;i<grid.length;i++)grid[i]=Math.random();
+    const hgt=new Float32Array(S*S);
+    for(let y=0;y<S;y++)for(let x=0;x<S;x++){
+      const gx=x/S*G,gy=y/S*G,x0=Math.floor(gx)%G,y0=Math.floor(gy)%G,x1=(x0+1)%G,y1=(y0+1)%G,fx=gx-Math.floor(gx),fy=gy-Math.floor(gy),sx=fx*fx*(3-2*fx),sy=fy*fy*(3-2*fy);
+      hgt[y*S+x]=(grid[y0*(G+1)+x0]*(1-sx)+grid[y0*(G+1)+x1]*sx)*(1-sy)+(grid[y1*(G+1)+x0]*(1-sx)+grid[y1*(G+1)+x1]*sx)*sy;
+    }
+    for(let y=0;y<S;y++)for(let x=0;x<S;x++){
+      const xm=(x-1+S)%S,xp=(x+1)%S,ym=(y-1+S)%S,yp=(y+1)%S;
+      const dx=(hgt[y*S+xp]-hgt[y*S+xm])*2.4,dy=(hgt[yp*S+x]-hgt[ym*S+x])*2.4,inv=1/Math.hypot(dx,dy,1),o=(y*S+x)*4;
+      img.data[o]=(-dx*inv*.5+.5)*255;img.data[o+1]=(-dy*inv*.5+.5)*255;img.data[o+2]=(inv*.5+.5)*255;img.data[o+3]=255;
+    }
+    ctx.putImageData(img,0,0);return cv;
+  }
+  function makeMatcapCanvas(kind){
+    const S=256,cv=document.createElement('canvas');cv.width=cv.height=S;const ctx=cv.getContext('2d'),img=ctx.createImageData(S,S);
+    const cfg={clay:{base:[.72,.70,.66],amb:.42,dif:.62,spec:.28,shi:26,specCol:[1,1,1],rim:[.9,.9,.95]},
+               skin:{base:[.98,.72,.58],amb:.5,dif:.6,spec:.34,shi:18,specCol:[1,.96,.9],rim:[1,.8,.7]},
+               metal:{base:[.16,.17,.2],amb:.12,dif:.5,spec:1.4,shi:60,specCol:[.95,.97,1],rim:[.5,.65,.9]}}[kind]||{base:[.7,.7,.7],amb:.4,dif:.6,spec:.3,shi:24,specCol:[1,1,1],rim:[.9,.9,.9]};
+    const L=[-.45,.75,.55],ll=1/Math.hypot(L[0],L[1],L[2]);L[0]*=ll;L[1]*=ll;L[2]*=ll;
+    for(let y=0;y<S;y++)for(let x=0;x<S;x++){
+      const nx=(x/S-.5)*2,ny=(y/S-.5)*2,r2=nx*nx+ny*ny,o=(y*S+x)*4;let r,g,b;
+      if(r2>1){r=cfg.base[0]*.25;g=cfg.base[1]*.25;b=cfg.base[2]*.25;}
+      else{
+        const nz=Math.sqrt(1-r2),d=Math.max(nx*L[0]+ny*L[1]+nz*L[2],0);
+        const hx=nx+L[0],hy=ny+L[1],hz=nz+L[2],hl=1/Math.hypot(hx,hy,hz);
+        const sp=Math.pow(Math.max((nx*hx+ny*hy+nz*hz)*hl,0),cfg.shi)*cfg.spec;
+        const fr=Math.pow(1-nz,3);
+        r=cfg.base[0]*(cfg.amb+cfg.dif*d)+cfg.specCol[0]*sp+cfg.rim[0]*fr*.35;
+        g=cfg.base[1]*(cfg.amb+cfg.dif*d)+cfg.specCol[1]*sp+cfg.rim[1]*fr*.35;
+        b=cfg.base[2]*(cfg.amb+cfg.dif*d)+cfg.specCol[2]*sp+cfg.rim[2]*fr*.35;
+      }
+      img.data[o]=Math.min(255,r*255);img.data[o+1]=Math.min(255,g*255);img.data[o+2]=Math.min(255,b*255);img.data[o+3]=255;
+    }
+    ctx.putImageData(img,0,0);return cv;
+  }
+  canvasTexture(makeDetailCanvas(),3);
+  const matcapCache={};
+  function setMatcap(kind,label){
+    if(kind==='none'){gl.uniform1f(U.uMatcapMix,0);$('#matcapOut').textContent='无';$('#matcapMix').value=0;$('#matcapMixOut').textContent='0%';return}
+    if(!matcapCache[kind])matcapCache[kind]=makeMatcapCanvas(kind);
+    canvasTexture(matcapCache[kind],4);
+    gl.uniform1f(U.uMatcapMix,.85);$('#matcapMix').value=85;$('#matcapMixOut').textContent='85%';$('#matcapOut').textContent=label;
+  }
+  canvasTexture(makeMatcapCanvas('clay'),4);
   let sourceCanvas=document.createElement('canvas'),depthCanvas=document.createElement('canvas'),sourceW=1200,sourceH=900;
   let mode=0,invert=false,auto=true,paintMode=0,toolMode='view',dragging=false,lastPointer=null,hasUserImage=false;
   let split=.5,cel=false,orbit=false,lastOrbit=0,targetView={x:0,y:0},view={x:0,y:0},frames=0,lastFps=performance.now();
@@ -423,7 +491,7 @@
   function render(t){
     resize();if(auto&&!dragging&&toolMode==='view'){targetView.x=Math.sin(t*.00038)*.34;targetView.y=Math.cos(t*.00031)*.2}view.x+=(targetView.x-view.x)*.065;view.y+=(targetView.y-view.y)*.065;
     if(orbit){const dt=lastOrbit?Math.min((t-lastOrbit)/1000,.05):0,angle=dt*.24,cs=Math.cos(angle),sn=Math.sin(angle);lights.forEach(l=>{if(!l.on)return;const x=l.x-.5,y=l.y-.5;l.x=.5+x*cs-y*sn;l.y=.5+x*sn+y*cs});updateGizmos()}lastOrbit=t;
-    gl.uniform2f(U.uView,view.x,view.y);gl.uniform2f(U.uTexel,1/sourceW,1/sourceH);gl.uniform1f(U.uScale,+$('#depthScale').value/100);gl.uniform1f(U.uContrast,+$('#contrast').value);gl.uniform1f(U.uNormalStrength,+$('#normalStrength').value);gl.uniform1f(U.uInvert,invert?1:0);gl.uniform1f(U.uAmbient,+$('#ambient').value/100);gl.uniform3fv(U.uAmbientColor,new Float32Array(hexRgb($('#ambientColor').value)));gl.uniform1f(U.uExposure,+$('#exposure').value);gl.uniform1f(U.uRim,+$('#rim').value);gl.uniform1f(U.uCel,cel?1:0);gl.uniform1f(U.uSplit,mode===5?split:-1);gl.uniform1f(U.uTime,t/1000);gl.uniform1i(U.uMode,mode);gl.uniform1f(U.uBlend,+$('#blendMode').value);
+    gl.uniform2f(U.uView,view.x,view.y);gl.uniform2f(U.uTexel,1/sourceW,1/sourceH);gl.uniform1f(U.uScale,+$('#depthScale').value/100);gl.uniform1f(U.uContrast,+$('#contrast').value);gl.uniform1f(U.uNormalStrength,+$('#normalStrength').value);gl.uniform1f(U.uNormalSmooth,+$('#normalSmooth').value);gl.uniform1f(U.uDetailStrength,+$('#detailStrength').value/100);gl.uniform1f(U.uMatcapMix,+$('#matcapMix').value/100);gl.uniform1f(U.uInvert,invert?1:0);gl.uniform1f(U.uAmbient,+$('#ambient').value/100);gl.uniform3fv(U.uAmbientColor,new Float32Array(hexRgb($('#ambientColor').value)));gl.uniform1f(U.uExposure,+$('#exposure').value);gl.uniform1f(U.uRim,+$('#rim').value);gl.uniform1f(U.uCel,cel?1:0);gl.uniform1f(U.uSplit,mode===5?split:-1);gl.uniform1f(U.uTime,t/1000);gl.uniform1i(U.uMode,mode);gl.uniform1f(U.uBlend,+$('#blendMode').value);
     const lp=[],lc=[],pw=[],ra=[],en=[];for(let i=0;i<8;i++){const l=lights[i]||{x:0,y:0,z:.5,color:'#ffffff',power:0,radius:.2,on:0};lp.push(l.x,1-l.y,l.z);lc.push(...hexRgb(l.color));pw.push(l.power);ra.push(l.radius);en.push(l.on)}
     gl.uniform3fv(U.uLightPos,new Float32Array(lp));gl.uniform3fv(U.uLightColor,new Float32Array(lc));gl.uniform1fv(U.uLightPower,new Float32Array(pw));gl.uniform1fv(U.uLightRadius,new Float32Array(ra));gl.uniform1fv(U.uLightEnabled,new Float32Array(en));gl.drawArrays(gl.TRIANGLES,0,6);
     frames++;if(t-lastFps>700){$('#fpsChip').textContent=Math.round(frames*1000/(t-lastFps))+' FPS';frames=0;lastFps=t}requestAnimationFrame(render)
@@ -444,9 +512,12 @@
   function setViewMode(n){mode=n;$$('#viewModes .mode').forEach(x=>x.setAttribute('aria-pressed',+x.dataset.mode===n));$('#compareHandle').classList.toggle('show',n===5);$('#compareHandle').style.left=(split*100)+'%'}
   $$('#viewModes .mode').forEach(b=>b.addEventListener('click',()=>setViewMode(+b.dataset.mode)));
   function bindRange(id,out,fmt){$(id).addEventListener('input',e=>$(out).textContent=fmt(+e.target.value))}
-  bindRange('#depthScale','#depthScaleOut',v=>v.toFixed(1)+'%');bindRange('#contrast','#contrastOut',v=>v.toFixed(2));bindRange('#normalStrength','#normalOut',v=>v.toFixed(1)+'×');bindRange('#brushSize','#brushOut',v=>v+' px');bindRange('#ambient','#ambientOut',v=>v+'%');bindRange('#exposure','#exposureOut',v=>v.toFixed(2));bindRange('#rim','#rimOut',v=>v.toFixed(2));
+  bindRange('#depthScale','#depthScaleOut',v=>v.toFixed(1)+'%');bindRange('#contrast','#contrastOut',v=>v.toFixed(2));bindRange('#normalStrength','#normalOut',v=>v.toFixed(1)+'×');bindRange('#normalSmooth','#normalSmoothOut',v=>v.toFixed(1));bindRange('#detailStrength','#detailOut',v=>v+'%');bindRange('#matcapMix','#matcapMixOut',v=>v+'%');bindRange('#brushSize','#brushOut',v=>v+' px');bindRange('#ambient','#ambientOut',v=>v+'%');bindRange('#exposure','#exposureOut',v=>v.toFixed(2));bindRange('#rim','#rimOut',v=>v.toFixed(2));
   $('#invertSwitch').addEventListener('click',()=>{invert=!invert;switcher($('#invertSwitch'),invert)});$('#autoSwitch').addEventListener('click',()=>{auto=!auto;switcher($('#autoSwitch'),auto)});$('#celSwitch').addEventListener('click',()=>{cel=!cel;switcher($('#celSwitch'),cel)});$('#orbitSwitch').addEventListener('click',()=>{orbit=!orbit;lastOrbit=0;switcher($('#orbitSwitch'),orbit)});
-  $('#paintNear').addEventListener('click',()=>setPaint(1));$('#paintFar').addEventListener('click',()=>setPaint(-1));$('#viewTool').addEventListener('click',()=>setTool('view'));$('#lightTool').addEventListener('click',()=>setTool('light'));$('#paintTool').addEventListener('click',()=>setTool('paint',1));$('#regenDepth').addEventListener('click',()=>generateDepth(false));$('#aiDepthBtn').addEventListener('click',generateAIDepth);
+  $('#paintNear').addEventListener('click',()=>setPaint(1));$('#paintFar').addEventListener('click',()=>setPaint(-1));$('#viewTool').addEventListener('click',()=>setTool('view'));$('#lightTool').addEventListener('click',()=>setTool('light'));$('#paintTool').addEventListener('click',()=>setTool('paint',1));$('#regenDepth').addEventListener('click',()=>generateDepth(false));
+  $$('#matcapPresets .preset[data-matcap]').forEach(b=>b.addEventListener('click',()=>setMatcap(b.dataset.matcap,b.textContent)));
+  $('#matcapUploadBtn').addEventListener('click',()=>$('#matcapInput').click());
+  $('#matcapInput').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{const cv=document.createElement('canvas');cv.width=cv.height=256;cv.getContext('2d').drawImage(img,0,0,256,256);canvasTexture(cv,4);gl.uniform1f(U.uMatcapMix,.85);$('#matcapMix').value=85;$('#matcapMixOut').textContent='85%';$('#matcapOut').textContent='自定义';notify('已载入自定义材质球')};img.src=r.result};r.readAsDataURL(f);e.target.value=''});$('#aiDepthBtn').addEventListener('click',generateAIDepth);
   $('#centerView').addEventListener('click',()=>{auto=false;switcher($('#autoSwitch'),false);targetView={x:0,y:0}});
   let blankLightClickAt=0;
   function moveSelected(e){if(!lights[selected])return;const r=canvas.getBoundingClientRect();lights[selected].x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));lights[selected].y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));updateGizmos()}
@@ -464,7 +535,7 @@
   function setSplitFromClient(x){const r=wrap.getBoundingClientRect();split=Math.max(.04,Math.min(.96,(x-r.left)/r.width));$('#compareHandle').style.left=(split*100)+'%';$('#compareHandle').setAttribute('aria-valuenow',Math.round(split*100))}
   let splitDragging=false;$('#compareHandle').addEventListener('pointerdown',e=>{e.stopPropagation();splitDragging=true;$('#compareHandle').setPointerCapture(e.pointerId)});$('#compareHandle').addEventListener('pointermove',e=>{if(splitDragging)setSplitFromClient(e.clientX)});$('#compareHandle').addEventListener('pointerup',()=>splitDragging=false);$('#compareHandle').addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){split=Math.max(.04,Math.min(.96,split+(e.key==='ArrowRight'?.02:-.02)));setSplitFromClient(wrap.getBoundingClientRect().left+split*wrap.clientWidth)}});
   document.addEventListener('keydown',e=>{if(/input|select|textarea/i.test(e.target.tagName))return;if(e.key==='v'||e.key==='V')setTool('view');else if(e.key==='l'||e.key==='L')setTool('light');else if(e.key==='b'||e.key==='B')setTool('paint',1);else if(e.key==='Delete'&&lights[selected])deleteLight(selected)});
-  $('#resetBtn').addEventListener('click',()=>{drawDemo();uploadTexture(imageTex,sourceCanvas,0);invert=false;auto=true;cel=false;orbit=false;split=.5;lastOrbit=0;hasUserImage=false;$('#aiDepthBtn').disabled=true;$('#aiDepthBtn').textContent='先导入原图';$('#aiProgress').hidden=true;targetView={x:0,y:0};view={x:0,y:0};lights=[{name:'暖色主灯',x:.28,y:.28,z:.62,color:'#ff955d',power:1.1,radius:.48,on:1},{name:'冷色轮廓',x:.76,y:.62,z:.5,color:'#62a8ff',power:.72,radius:.42,on:1}];selected=0;$('#depthScale').value=4;$('#contrast').value=1.2;$('#normalStrength').value=2.4;$('#ambient').value=72;$('#ambientColor').value='#ffffff';$('#exposure').value=1;$('#rim').value=.25;$('#blendMode').value=0;$('#depthScaleOut').textContent='4.0%';$('#contrastOut').textContent='1.20';$('#normalOut').textContent='2.4×';$('#ambientOut').textContent='72%';$('#exposureOut').textContent='1.00';$('#rimOut').textContent='0.25';switcher($('#invertSwitch'),false);switcher($('#autoSwitch'),true);switcher($('#celSwitch'),false);switcher($('#orbitSwitch'),false);setTool('view');setViewMode(0);$('#resChip').textContent='DEMO · 1200×900';$('#stageStatus').textContent='GPU 渲染管线';renderLights();syncEditor();notify('已恢复初始场景')});
+  $('#resetBtn').addEventListener('click',()=>{drawDemo();uploadTexture(imageTex,sourceCanvas,0);invert=false;auto=true;cel=false;orbit=false;split=.5;lastOrbit=0;hasUserImage=false;$('#aiDepthBtn').disabled=true;$('#aiDepthBtn').textContent='先导入原图';$('#aiProgress').hidden=true;targetView={x:0,y:0};view={x:0,y:0};lights=[{name:'暖色主灯',x:.28,y:.28,z:.62,color:'#ff955d',power:1.1,radius:.48,on:1},{name:'冷色轮廓',x:.76,y:.62,z:.5,color:'#62a8ff',power:.72,radius:.42,on:1}];selected=0;$('#depthScale').value=4;$('#contrast').value=1.2;$('#normalStrength').value=2.4;$('#normalSmooth').value=1;$('#detailStrength').value=25;setMatcap('none','无');$('#ambient').value=72;$('#ambientColor').value='#ffffff';$('#exposure').value=1;$('#rim').value=.25;$('#blendMode').value=0;$('#depthScaleOut').textContent='4.0%';$('#contrastOut').textContent='1.20';$('#normalOut').textContent='2.4×';$('#normalSmoothOut').textContent='1.0';$('#detailOut').textContent='25%';$('#ambientOut').textContent='72%';$('#exposureOut').textContent='1.00';$('#rimOut').textContent='0.25';switcher($('#invertSwitch'),false);switcher($('#autoSwitch'),true);switcher($('#celSwitch'),false);switcher($('#orbitSwitch'),false);setTool('view');setViewMode(0);$('#resChip').textContent='DEMO · 1200×900';$('#stageStatus').textContent='GPU 渲染管线';renderLights();syncEditor();notify('已恢复初始场景')});
   $('#exportBtn').addEventListener('click',()=>{requestAnimationFrame(()=>{canvas.toBlob(blob=>{if(!blob){notify('导出失败');return}const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='pseudo-3d-'+Date.now()+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);notify('PNG 已导出')},'image/png')})});
   window.addEventListener('resize',resize);
   drawDemo();uploadTexture(imageTex,sourceCanvas,0);renderLights();syncEditor();requestAnimationFrame(render);
