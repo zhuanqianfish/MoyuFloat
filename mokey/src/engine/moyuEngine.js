@@ -27,9 +27,14 @@ void main(){
   vec2 base=mix(vec2(.035),vec2(.965),vUv);
   float d0=depthAt(base); vec2 uv=base-uView*uScale*(d0-.28); float d=depthAt(uv);
   uv=clamp(base-uView*uScale*(d-.28),.002,.998); d=depthAt(uv);
-  float dx=depthAt(uv+vec2(uTexel.x,0.))-depthAt(uv-vec2(uTexel.x,0.));
-  float dy=depthAt(uv+vec2(0.,uTexel.y))-depthAt(uv-vec2(0.,uTexel.y));
-  vec3 n=normalize(vec3(-dx*uNormalStrength/uTexel.x*.006,-dy*uNormalStrength/uTexel.y*.006,1.));
+  vec2 npx=uTexel*(1.+uNormalSmooth*2.);
+  float ntl=depthAt(uv+vec2(-npx.x,-npx.y)),ntc=depthAt(uv+vec2(0.,-npx.y)),ntr=depthAt(uv+vec2(npx.x,-npx.y));
+  float nml=depthAt(uv+vec2(-npx.x,0.)),nmr=depthAt(uv+vec2(npx.x,0.));
+  float nbl=depthAt(uv+vec2(-npx.x,npx.y)),nbc=depthAt(uv+vec2(0.,npx.y)),nbr=depthAt(uv+vec2(npx.x,npx.y));
+  float dx=(ntr+2.*nmr+nbr)-(ntl+2.*nml+nbl);
+  float dy=(nbl+2.*nbc+nbr)-(ntl+2.*ntc+ntr);
+  float nrm=1.+uNormalSmooth*2.;
+  vec3 n=normalize(vec3(-dx*uNormalStrength*.0015/(uTexel.x*nrm),-dy*uNormalStrength*.0015/(uTexel.y*nrm),1.));
   if(uMode==1){gl_FragColor=vec4(vec3(d),1.);return;} if(uMode==2){gl_FragColor=vec4(n*.5+.5,1.);return;}
   vec3 original=texture2D(uImage,vUv).rgb; if(uMode==3){gl_FragColor=vec4(original,1.);return;}
   vec3 baseColor=uMode==4?vec3(1.):texture2D(uImage,uv).rgb; vec3 lit=baseColor*uAmbient*uAmbientColor; float maxNdl=0.;
@@ -63,7 +68,7 @@ function hexRgb(h) {
 }
 
 const defaultParams = () => ({
-  depthScale: 4, contrast: 1.2, normalStrength: 2.4, invert: false,
+  depthScale: 4, contrast: 1.2, normalStrength: 2.4, normalSmooth: 1, invert: false,
   ambient: 72, ambientColor: '#ffffff', exposure: 1, rim: .25,
   cel: false, orbit: false, auto: true, blend: 0,
   viewMode: 0, split: .5, brushSize: 60,
@@ -131,7 +136,7 @@ export class MoyuEngine {
     const pos = gl.getAttribLocation(program, 'aPos');
     gl.enableVertexAttribArray(pos); gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
     const U = {};
-    ['uImage', 'uDepth', 'uView', 'uTexel', 'uScale', 'uContrast', 'uNormalStrength', 'uInvert', 'uAmbient', 'uAmbientColor', 'uExposure', 'uRim', 'uCel', 'uSplit', 'uTime', 'uMode', 'uLightPos', 'uLightColor', 'uLightPower', 'uLightRadius', 'uLightEnabled', 'uBlend']
+    ['uImage', 'uDepth', 'uView', 'uTexel', 'uScale', 'uContrast', 'uNormalStrength', 'uNormalSmooth', 'uInvert', 'uAmbient', 'uAmbientColor', 'uExposure', 'uRim', 'uCel', 'uSplit', 'uTime', 'uMode', 'uLightPos', 'uLightColor', 'uLightPower', 'uLightRadius', 'uLightEnabled', 'uBlend']
       .forEach(n => U[n] = gl.getUniformLocation(program, n));
     this.U = U;
     const makeTexture = (unit) => {
@@ -454,6 +459,7 @@ export class MoyuEngine {
     gl.uniform1f(U.uScale, P.depthScale / 100);
     gl.uniform1f(U.uContrast, P.contrast);
     gl.uniform1f(U.uNormalStrength, P.normalStrength);
+    gl.uniform1f(U.uNormalSmooth, P.normalSmooth);
     gl.uniform1f(U.uInvert, P.invert ? 1 : 0);
     gl.uniform1f(U.uAmbient, P.ambient / 100);
     gl.uniform3fv(U.uAmbientColor, new Float32Array(hexRgb(P.ambientColor)));

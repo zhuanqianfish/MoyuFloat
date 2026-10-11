@@ -61,6 +61,7 @@ export function DepthTab() {
         <ParamSlider param="depthScale" label="深度强度" min={0} max={12} step={.1} format={v => v.toFixed(1) + '%'} />
         <ParamSlider param="contrast" label="对比度" min={.2} max={3} step={.05} format={v => v.toFixed(2)} />
         <ParamSlider param="normalStrength" label="法线强度" min={0} max={6} step={.1} format={v => v.toFixed(1) + '×'} />
+        <ParamSlider param="normalSmooth" label="法线平滑" min={0} max={4} step={.1} format={v => v.toFixed(1)} />
         <ParamSwitch param="invert" label="深度反转" />
         {engine.hasImage && (
           <img className="mf-depth-thumb" src={engine.getDepthDataURL()} alt="深度预览" style={{ marginTop: 8 }} />
