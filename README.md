@@ -2,7 +2,7 @@
 
 # 摸鱼浮画 · MoyuFloat
 
-AI 补深度，拖灯打光，2D 秒变立体。
+上传一张 2D 图，本地生成深度，做出视差和光影。
 
 ![纯前端](https://img.shields.io/badge/前端-100%25-brightgreen)
 ![零构建](https://img.shields.io/badge/构建-零构建-blue)
