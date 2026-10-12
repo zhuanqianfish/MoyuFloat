@@ -2,15 +2,12 @@
 
 # 摸鱼浮画 · MoyuFloat
 
-### 让每一张 2D 插画，都浮起来 ✨
+AI 补深度，拖灯打光，2D 秒变立体。
 
 ![纯前端](https://img.shields.io/badge/前端-100%25-brightgreen)
 ![零构建](https://img.shields.io/badge/构建-零构建-blue)
 ![隐私](https://img.shields.io/badge/隐私-本地运算-orange)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
-
-上传一张 2D 图片，自动生成深度图，实时渲染出视差立体感与动态光影。
-加几盏灯，拖一拖，一张平面的画就有了舞台感。
 
 </div>
 
